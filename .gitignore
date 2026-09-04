@@ -1,0 +1,15 @@
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.env
+.env.local
+backend/data/
+rag/chroma_data/
+logs/
+*.gguf
+*.pt
+*.bin
+*.onnx

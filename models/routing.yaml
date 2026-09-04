@@ -1,0 +1,8 @@
+global:
+  ollama_base_url: "http://127.0.0.1:11434"
+
+routes:
+  text_reasoning: "llama3.2"
+  code_gen: "llama3.2"
+  image_ocr: "llava:7b"
+  embeddings: "nomic-embed-text"
