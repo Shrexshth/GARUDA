@@ -1,82 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { 
-  Brain, 
-  ScanSearch, 
-  FileText, 
-  Calculator, 
-  Database, 
-  CheckCircle 
-} from "lucide-react";
+import { useState } from "react";
+import AppShell from "@/components/layout/AppShell";
+import AgentCard from "@/components/ui/AgentCard";
+import InputBar from "@/components/ui/InputBar";
+import EmptyState from "@/components/ui/EmptyState";
 
-export default function Home() {
-  const [backendStatus, setBackendStatus] = useState<string>("checking...");
-  const [isError, setIsError] = useState<boolean>(false);
+interface RecentSession {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  timestamp: string;
+}
 
-  useEffect(() => {
-    const fetchHealth = async () => {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiUrl}/api/health`);
-        if (!res.ok) throw new Error("Network response was not ok");
-        const data = await res.json();
-        setBackendStatus(data.status === "ok" ? "Connected 🟢" : "Issues 🟡");
-        setIsError(false);
-      } catch (error) {
-        setBackendStatus("Disconnected 🔴");
-        setIsError(true);
-      }
-    };
-    
-    fetchHealth();
-  }, []);
+const AGENTS = [
+  { name: "Reasoning Agent", description: "General technical queries & troubleshooting", icon: "psychology", href: "/agents/reasoning", bgClass: "bg-secondary-container" },
+  { name: "Scan & Vision", description: "Extract data from physical engineering schematics", icon: "document_scanner", href: "/agents/scan", bgClass: "bg-secondary-fixed" },
+  { name: "Document Agent", description: "Draft standardized NFAs and compliance notes", icon: "article", href: "/agents/document", bgClass: "bg-tertiary-fixed" },
+  { name: "Code & Calculation", description: "Compute orifice flow rates and fluid dynamics", icon: "terminal", href: "/agents/code", bgClass: "bg-secondary-fixed-dim" },
+  { name: "Knowledge Base", description: "Search indexed OISD standards & refinery SOPs", icon: "auto_stories", href: "/agents/knowledge-base", bgClass: "bg-surface-container-high" },
+  { name: "Approval & Workflow", description: "Track multi-tier approval chains and signatures", icon: "verified", href: "/agents/approval", bgClass: "bg-tertiary-fixed-dim" },
+];
 
-  const agents = [
-    { name: "Reasoning", icon: <Brain className="w-8 h-8 mb-4 text-blue-500" />, desc: "Logical reasoning and decision making." },
-    { name: "Scan / Vision", icon: <ScanSearch className="w-8 h-8 mb-4 text-purple-500" />, desc: "OCR and visual data extraction." },
-    { name: "Document", icon: <FileText className="w-8 h-8 mb-4 text-orange-500" />, desc: "Parse and analyze complex PDFs." },
-    { name: "Code / Math", icon: <Calculator className="w-8 h-8 mb-4 text-green-500" />, desc: "Code generation and mathematical calculations." },
-    { name: "Knowledge Base", icon: <Database className="w-8 h-8 mb-4 text-red-500" />, desc: "RAG queries over corporate knowledge." },
-    { name: "Approval Workflow", icon: <CheckCircle className="w-8 h-8 mb-4 text-teal-500" />, desc: "Human-in-the-loop and automated approvals." },
-  ];
+export default function HomePage() {
+  const [recentSessions] = useState<RecentSession[]>([]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-8 font-sans text-zinc-900 dark:text-zinc-100 transition-colors">
-      <header className="mb-12 flex justify-between items-center max-w-6xl mx-auto border-b border-zinc-200 dark:border-zinc-800 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">GAURDA AI Workbench</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Sovereign, On-Premise Agentic UI</p>
-        </div>
-        
-        {/* Backend Connectivity Indicator */}
-        <div className={`px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 border ${
-          isError 
-            ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900" 
-            : backendStatus.includes("checking")
-              ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-900"
-              : "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-900"
-        }`}>
-          Backend Status: <span>{backendStatus}</span>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agents.map((agent, index) => (
-            <div 
-              key={index}
-              className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all cursor-pointer group"
-            >
-              <div className="group-hover:scale-110 transition-transform origin-left">
-                {agent.icon}
-              </div>
-              <h2 className="text-xl font-semibold mb-2">{agent.name} Agent</h2>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm">{agent.desc}</p>
+    <AppShell>
+      <div className="flex flex-col xl:flex-row gap-space-lg w-full min-h-[calc(100vh-8.5rem)]">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col justify-between min-w-0 pr-0 xl:pr-space-xs">
+          {/* Hero */}
+          <div className="flex flex-col items-center text-center max-w-2xl mx-auto pt-space-md sm:pt-space-xl pb-space-lg">
+            <div className="w-8 h-8 rounded-full bg-secondary-fixed/50 flex items-center justify-center text-on-secondary-fixed-variant mb-space-sm shadow-sm">
+              <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
             </div>
-          ))}
+            <h1 className="text-display font-semibold text-on-surface tracking-tight">
+              Welcome back — what do you need to do today?
+            </h1>
+            <p className="text-body-md text-secondary mt-space-xs max-w-lg">
+              Access confidential on-premise AI assistants for engineering, compliance, and plant operations.
+            </p>
+          </div>
+
+          {/* Agent Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-md my-auto py-space-sm">
+            {AGENTS.map((agent) => (
+              <AgentCard key={agent.href} {...agent} />
+            ))}
+          </div>
+
+          {/* Input Bar */}
+          <div className="pt-space-md pb-space-xs mt-auto">
+            <InputBar placeholder="Initiate a query or ask an agent to start a workflow..." />
+          </div>
         </div>
-      </main>
-    </div>
+
+        {/* Right Panel: Recent Sessions */}
+        <div className="w-full xl:w-80 shrink-0 bg-surface-container-low/60 rounded-[24px] p-space-md flex flex-col justify-between">
+          <div className="flex flex-col gap-space-sm">
+            <div className="flex items-center justify-between px-space-xs">
+              <div className="flex items-center gap-space-xs">
+                <span className="text-headline-sm font-semibold text-on-surface">Recent Sessions</span>
+              </div>
+              <button className="w-7 h-7 rounded-lg flex items-center justify-center text-secondary hover:bg-surface-container hover:text-on-surface transition-colors">
+                <span className="material-symbols-outlined text-[18px]">filter_list</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-secondary">search</span>
+              <input
+                className="w-full h-9 pl-9 pr-space-sm bg-surface-container-lowest rounded-xl text-body-sm text-on-surface placeholder:text-secondary focus:outline-none shadow-sm"
+                placeholder="Search history..."
+                type="text"
+              />
+            </div>
+
+            {recentSessions.length === 0 ? (
+              <EmptyState icon="history" title="No recent sessions yet" description="Your conversations with agents will appear here." />
+            ) : (
+              <div className="flex flex-col gap-space-xs mt-space-2xs overflow-y-auto max-h-[calc(100vh-21rem)]">
+                {/* Sessions would render here from recentSessions state */}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-space-md mt-space-sm">
+            <button className="w-full flex items-center justify-center gap-space-xs py-2.5 rounded-full bg-primary text-on-primary text-label-md font-medium hover:bg-inverse-surface shadow-sm transition-all">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>New Task</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </AppShell>
   );
 }
