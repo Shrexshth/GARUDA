@@ -2,21 +2,20 @@
   <h1>GAURDA</h1>
   <p><b>A sovereign, on-premise agentic AI workbench for confidential industrial work.</b></p>
 
-  ![Status: In Development](https://img.shields.io/badge/Status-In%20Development-3b4252?style=flat-square)
+  ![Status: Demo Ready](https://img.shields.io/badge/Status-Demo%20Ready-2d6a4f?style=flat-square)
   ![License: MIT](https://img.shields.io/badge/License-MIT-3b4252?style=flat-square)
   ![Problem Statement: SIH 26117](https://img.shields.io/badge/SIH-26117-3b4252?style=flat-square)
   ![Built for: MRPL](https://img.shields.io/badge/Built%20for-MRPL-3b4252?style=flat-square)
   ![Platform: On-Premise](https://img.shields.io/badge/Platform-On--Premise-3b4252?style=flat-square)
-
-  <br />
-
-  ![GAURDA Banner](./assets/banner.png)
+  ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)
+  ![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs)
+  ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)
 
 </div>
 
 <br />
 
-**GAURDA is an entirely air-gapped, sovereign AI operating system that allows industrial engineers to parse P&IDs, draft compliance notes, and query plant telemetry using state-of-the-art open-weight models without a single byte of confidential data ever leaving the corporate network.**
+**GAURDA is an entirely air-gapped, sovereign AI operating system that allows industrial engineers to parse P&IDs, draft compliance notes, run engineering calculations, and query plant documentation using state-of-the-art open-weight models — without a single byte of confidential data ever leaving the corporate network.**
 
 ---
 
@@ -30,6 +29,7 @@
 - [Hardware & Deployment Model](#hardware--deployment-model)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
+- [Running Tests](#running-tests)
 - [Roadmap](#roadmap)
 - [Team](#team)
 - [License](#license)
@@ -43,12 +43,12 @@ Refineries and Public Sector Undertakings (PSUs) generate immense volumes of hig
 
 ## The Solution
 GAURDA bridges this gap by bringing powerful agentic AI directly to the edge. It is a fully on-premise, multi-agent AI workbench designed explicitly for confidential industrial engineering.
-- **Multi-Model Auto-Routing:** Dynamically routes queries to specialized local open-weight models (e.g., Llama 3 for reasoning, LLaVA for vision) based on the task.
-- **Agentic Multi-Step Execution:** Agents autonomously orchestrate complex workflows using local tools, from Python data analysis to web search over an internal intranet.
+- **Multi-Model Auto-Routing:** Dynamically routes queries to specialized local open-weight models (Qwen 2.5 for reasoning, LLaVA for vision) via a LangGraph state machine — ensuring only one model is loaded at a time to respect memory constraints.
+- **Agentic Multi-Step Execution:** Agents autonomously orchestrate complex workflows using local tools, from sandboxed Python data analysis to semantic document search.
 - **Multimodal OCR & Vision:** Extracts tabular specs, tags, and geometry directly from complex engineering PDFs and CAD exports.
 - **Real Office-Format Deliverables:** Generates actual `.docx`, `.xlsx`, and `.pptx` files for formal approval processes.
-- **Local RAG Knowledge Base:** Indexes decades of OISD standards and plant SOPs for instant semantic search.
-- **Provable Sovereignty:** Operates under a strict `pfctl` enforced air-gap—guaranteeing zero external network calls.
+- **Local RAG Knowledge Base:** Indexes OISD standards, refinery SOPs, and inspection reports for instant semantic search via embedded ChromaDB.
+- **Provable Sovereignty:** Operates under a strict `pfctl` enforced air-gap — a built-in verification script proves zero external network calls.
 
 ---
 
@@ -59,19 +59,19 @@ flowchart TD
     subgraph GAURDA["100% On-Premise — Zero External Network Calls"]
         direction TB
         
-        U([User Request]) --> R[Task Classifier & Router]
+        U([User Request]) --> R[LangGraph Router Node]
         
-        R --> |Vision Task| M1(LLaVA via Ollama)
-        R --> |Logic/Drafting| M2(Llama 3 via Ollama)
+        R --> |Vision Task| M1(LLaVA 7B via Ollama)
+        R --> |Logic/Drafting/Code| M2(Qwen 2.5 7B via Ollama)
         
         M1 & M2 --> A[Agent Orchestration Layer]
         
         subgraph Tools["Local Tools"]
             direction LR
-            T1(File I/O)
-            T2(Sandboxed Code Execution)
-            T3(Spreadsheet Ops)
-            T4(ChromaDB RAG)
+            T1(Document Exporter — docxtpl)
+            T2(Sandboxed Code Execution — subprocess)
+            T3(ChromaDB RAG — Embedded)
+            T4(SQLite — Tasks & Audit)
         end
         
         A <--> Tools
@@ -93,12 +93,12 @@ flowchart TD
 
 | Agent | Purpose | Capabilities |
 |-------|---------|--------------|
-| **Reasoning Agent** | General technical queries & troubleshooting. | • Synthesizes inspection logs and vibration metrics.<br>• Answers complex multi-step engineering queries. |
-| **Scan & Vision Agent** | Extracts data from physical engineering schematics. | • Parses complex P&IDs and pump data sheets.<br>• Digitizes tabular equipment schedules via local OCR. |
-| **Document Agent** | Drafts standardized NFAs and compliance notes. | • Generates formal approval memos (MRPL format).<br>• Exports native `.docx` and `.pdf` deliverables. |
-| **Code & Calculation Agent** | Computes orifice flow rates and fluid dynamics. | • Writes and executes sandboxed Python (Scipy/NumPy).<br>• Validates thermodynamic parameters locally. |
-| **Knowledge Base Agent** | Searches indexed OISD standards & refinery SOPs. | • Semantic search across millions of tokens.<br>• Precise citation linking to source manuals. |
-| **Approval & Workflow Agent** | Tracks multi-tier approval chains and signatures. | • Orchestrates cross-agent pipelines.<br>• Manages document state and review cycles. |
+| **Reasoning Agent** | General technical queries & troubleshooting. | • Synthesizes inspection logs and vibration metrics.<br>• Answers complex multi-step engineering queries.<br>• Persistent chat history via SQLite. |
+| **Scan & Vision Agent** | Extracts data from physical engineering schematics. | • Parses complex P&IDs and pump data sheets.<br>• Digitizes tabular equipment schedules via local OCR.<br>• Returns structured JSON for downstream agents. |
+| **Document Agent** | Drafts standardized NFAs and compliance notes. | • Generates formal approval memos (MRPL format).<br>• Exports native `.docx` deliverables via `docxtpl`. |
+| **Code & Calculation Agent** | Computes orifice flow rates and fluid dynamics. | • Writes and executes sandboxed Python (math, json, datetime).<br>• Self-correcting: auto-retries failed code up to 2 times.<br>• Strict 5-second timeout kills infinite loops. |
+| **Knowledge Base Agent** | Searches indexed OISD standards & refinery SOPs. | • Semantic search across 20+ indexed document chunks.<br>• Returns relevance-scored results with source citations.<br>• Embedded ChromaDB — no separate server process. |
+| **Approval & Workflow Agent** | Tracks multi-tier approval chains and signatures. | • SQLite-backed task state management.<br>• Immutable audit trail for every status change.<br>• Full CRUD pipeline for approval workflows. |
 
 ---
 
@@ -133,19 +133,24 @@ This pipeline ensures that an engineer goes from a raw scan to a fully formatted
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | React, Next.js (App Router), Tailwind CSS v4 |
-| **Backend** | FastAPI, Python 3.11 |
+| **Frontend** | React, Next.js 14 (App Router), Tailwind CSS v4 |
+| **Backend** | FastAPI, Python 3.11+, LangGraph (orchestration) |
 | **Local Inference** | Ollama (serving open-weight models locally) |
-| **Vector DB / RAG** | ChromaDB |
-| **Code Execution** | Sandboxed local Python REPL |
-| **Deliverables** | `python-docx`, `openpyxl`, `python-pptx` |
-| **Models** | Llama 3.2 (Reasoning), LLaVA 7B (Vision), Nomic Embed (RAG) |
+| **Vector DB / RAG** | ChromaDB (embedded PersistentClient mode) |
+| **Persistence** | SQLite (chat history, task state, audit trail) |
+| **Code Execution** | Sandboxed subprocess (env-stripped, timeout-enforced) |
+| **Deliverables** | `docxtpl`, `python-docx`, `openpyxl`, `python-pptx` |
+| **Models** | Qwen 2.5 7B (Reasoning/Code), LLaVA 7B (Vision), Nomic Embed Text (RAG) |
 
 ---
 
 ## Hardware & Deployment Model
 
-GAURDA operates entirely on-premise. For the purpose of the Smart India Hackathon demo, the entire architecture—inference, orchestration, UI, and RAG—runs concurrently on a single **MacBook Air M4 with 16GB of unified memory**. The system is container-ready and architected to seamlessly scale to dedicated bare-metal GPU servers (e.g., NVIDIA H100 clusters) for full enterprise deployment, while strictly maintaining the zero-external-network sovereignty guarantee.
+GAURDA operates entirely on-premise. For the purpose of the Smart India Hackathon demo, the entire architecture — inference, orchestration, UI, and RAG — runs concurrently on a single **MacBook Air M4 with 16GB of unified memory**.
+
+The LangGraph state machine enforces **strict sequential model execution** — only one LLM is loaded into memory at any time. This prevents OOM crashes and ensures stable performance under the 16GB constraint.
+
+The system is architected to seamlessly scale to dedicated bare-metal GPU servers for full enterprise deployment, while strictly maintaining the zero-external-network sovereignty guarantee.
 
 ---
 
@@ -154,7 +159,7 @@ GAURDA operates entirely on-premise. For the purpose of the Smart India Hackatho
 ### Prerequisites
 - Node.js 20+
 - Python 3.11+
-- Ollama (installed and running)
+- [Ollama](https://ollama.com/download) (installed and running)
 
 ### Installation
 
@@ -166,7 +171,7 @@ GAURDA operates entirely on-premise. For the purpose of the Smart India Hackatho
 
 2. **Install Backend Dependencies**
    ```bash
-   python -m venv venv
+   python3 -m venv venv
    source venv/bin/activate
    pip install -r backend/requirements.txt
    ```
@@ -179,14 +184,21 @@ GAURDA operates entirely on-premise. For the purpose of the Smart India Hackatho
    ```
 
 4. **Configure Local Models**
-   Ensure Ollama is running, then pull the required models:
+   Ensure Ollama is running (open `/Applications/Ollama.app`), then pull the required models:
    ```bash
-   ollama pull llama3.2
+   ollama pull qwen2.5:7b
    ollama pull llava:7b
    ollama pull nomic-embed-text
    ```
 
-5. **Run the Application**
+5. **Seed the Knowledge Base**
+   Load the demo manuals (OISD standards, pump SOPs, inspection reports) into ChromaDB:
+   ```bash
+   source venv/bin/activate
+   python demo-data/seed_knowledge_base.py
+   ```
+
+6. **Run the Application**
    Use the provided start script to launch both the backend and frontend simultaneously:
    ```bash
    ./run.sh
@@ -199,14 +211,56 @@ GAURDA operates entirely on-premise. For the purpose of the Smart India Hackatho
 
 ```text
 GARUDA/
-├── backend/            # FastAPI orchestration layer and API routes
-├── frontend/           # Next.js React UI and Tailwind design system
-├── core/               # Agent orchestration and multi-model router
-├── tools/              # Local capabilities (file I/O, Python sandbox)
-├── models/             # Local routing logic (routing.yaml)
-├── rag/                # ChromaDB ingestion and semantic search pipelines
-├── infra/              # Airgap verification and network enforcement scripts
-└── docs/               # Technical documentation and setup guides
+├── backend/                # FastAPI backend
+│   ├── api/                # Route handlers for all 6 agents
+│   │   ├── scan.py         # Vision/OCR upload endpoint
+│   │   ├── reasoning.py    # Chat endpoint with SQLite history
+│   │   ├── code.py         # Code generation + sandbox execution
+│   │   ├── document.py     # NFA drafting + docx export
+│   │   ├── knowledge.py    # ChromaDB semantic search
+│   │   └── approval.py     # Task CRUD + audit trail
+│   ├── core/               # LangGraph orchestrator
+│   │   ├── graph.py        # State machine with conditional edges
+│   │   ├── nodes.py        # Router, Vision, Reasoning, Tool nodes
+│   │   ├── state.py        # GraphState TypedDict definition
+│   │   └── config.py       # Environment-driven configuration
+│   ├── tools/              # Local capabilities
+│   │   ├── sandbox.py      # Isolated Python execution (no Docker)
+│   │   ├── document_exporter.py  # docxtpl-based NFA generator
+│   │   └── rag_engine.py   # Embedded ChromaDB search engine
+│   └── main.py             # FastAPI app entry point + CORS
+├── frontend/               # Next.js 14 React UI
+│   └── src/app/agents/     # 6 agent pages wired to backend
+├── models/                 # Model routing configuration
+│   └── routing.yaml        # Ollama model ↔ task mapping
+├── rag/                    # ChromaDB persistent storage
+├── demo-data/              # Reusable demo inputs
+│   ├── manuals/            # OISD, SOP, and inspection report texts
+│   ├── calculations/       # Pre-written engineering calc prompts
+│   └── seed_knowledge_base.py  # Ingestion script
+├── tests/                  # Smoke test suite
+│   └── smoke_test.py       # 14 automated tests
+├── infra/                  # Security & sovereignty
+│   ├── verify_airgap.py    # pfctl air-gap verification
+│   └── pf_airgap.conf      # macOS packet filter rules
+├── docs/                   # Setup guides
+└── run.sh                  # One-command launch script
+```
+
+---
+
+## Running Tests
+
+Run the automated smoke test suite (7 tests work without Ollama, 7 require Ollama running):
+
+```bash
+./run.sh --test
+```
+
+Verify air-gap network isolation:
+
+```bash
+./run.sh --airgap
 ```
 
 ---
@@ -214,15 +268,21 @@ GARUDA/
 ## Roadmap
 
 - [x] Scaffold core monorepo architecture
-- [x] Implement clean, professional Stitch design system
-- [x] Build multi-model dynamic router logic
-- [x] Enforce `pfctl` network air-gap constraints
-- [ ] Connect ChromaDB RAG pipeline to Reasoning Agent
-- [ ] Implement robust sandboxed Python execution for Code Agent
-- [ ] **Demo Target:** Functional end-to-end NFA drafting pipeline
-- [ ] **Production:** Implement multi-user role-based access control (RBAC)
-- [ ] **Production:** Migrate from local macOS execution to dedicated Linux GPU clusters
-- [ ] **Production:** Expand compliance dashboard and comprehensive audit trails
+- [x] Implement clean, professional design system (Stitch → Tailwind v4)
+- [x] Build LangGraph multi-model dynamic router with sequential execution
+- [x] Implement all 6 agent backends with FastAPI endpoints
+- [x] Wire all 6 frontend pages to backend via React fetch
+- [x] Build secure subprocess sandbox (no Docker, env-stripped, timeout-enforced)
+- [x] Implement ChromaDB embedded RAG with demo data ingestion
+- [x] Implement SQLite persistence (chat history, tasks, audit trail)
+- [x] Build `pfctl` network air-gap enforcement and verification
+- [x] Build automated smoke test suite (14 tests)
+- [ ] Wire dynamic model-routing indicator in the UI
+- [ ] Add cross-agent pipeline (scan → KB → NFA → approval)
+- [ ] **Demo Target:** End-to-end NFA drafting pipeline with Ollama
+- [ ] **Production:** Multi-user role-based access control (RBAC)
+- [ ] **Production:** Migrate to dedicated Linux GPU clusters
+- [ ] **Production:** Comprehensive audit dashboard and compliance reporting
 
 ---
 
@@ -230,7 +290,7 @@ GARUDA/
 
 | Name | Role |
 |------|------|
-| **[Shreshth Singh]** | Full-Stack AI Engineer |
+| **Shreshth Singh** | Full-Stack AI Engineer |
 | **[Team Member 2]** | Prompt Engineer & RAG Specialist |
 | **[Team Member 3]** | UI/UX & Frontend Developer |
 | **[Team Member 4]** | Infrastructure & Security |

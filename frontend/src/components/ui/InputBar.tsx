@@ -19,26 +19,14 @@ export default function InputBar({ placeholder = "Initiate a query or ask an age
       className="w-full relative flex items-center shadow-lg rounded-full bg-surface-container-low p-1.5 transition-all focus-within:bg-surface-container-lowest focus-within:shadow-xl"
       onSubmit={handleSubmit}
     >
-      <button
-        type="button"
-        className="w-10 h-10 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-container transition-colors shrink-0"
-        title="Attach file"
-      >
-        <span className="material-symbols-outlined text-[20px]">attach_file</span>
-      </button>
+
       <input
         className="flex-1 bg-transparent border-0 outline-none px-space-sm text-body-md text-on-surface placeholder:text-secondary focus:ring-0 min-w-0"
         placeholder={placeholder}
         type="text"
       />
       <div className="flex items-center gap-space-2xs shrink-0 pr-1">
-        <button
-          type="button"
-          className="w-10 h-10 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-          title="Voice Input"
-        >
-          <span className="material-symbols-outlined text-[20px]">mic</span>
-        </button>
+
         <button
           type="submit"
           className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:bg-on-surface-variant transition-transform active:scale-95"

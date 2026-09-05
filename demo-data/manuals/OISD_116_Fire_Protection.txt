@@ -1,0 +1,36 @@
+OISD STANDARD 116 — FIRE PROTECTION FACILITIES FOR PETROLEUM REFINERIES
+
+1. SCOPE
+This standard covers fire protection facilities in petroleum refineries and gas processing plants operated by the oil industry. It applies to new installations and major modifications to existing facilities.
+
+2. FIRE WATER SYSTEM REQUIREMENTS
+2.1 The fire water network shall be designed to maintain a minimum residual pressure of 7.0 kg/cm² at the hydraulically most remote hydrant, with all simultaneously required water demands flowing.
+2.2 Fire water pump capacity shall be at least 3600 m³/hr for a refinery with a crude throughput exceeding 6 MMTPA.
+2.3 Fire water storage shall be sufficient for a minimum of 4 hours of continuous operation.
+
+3. FOAM SYSTEM SPECIFICATIONS
+3.1 All floating roof tanks storing flammable liquids with a flash point below 65°C shall be provided with fixed foam systems.
+3.2 Foam concentrate storage capacity shall be adequate for a minimum of 55 minutes of continuous operation.
+3.3 The foam application rate shall not be less than 12.2 liters per minute per square meter of tank area.
+
+4. PUMP DATA SCHEDULE — FIRE WATER SYSTEM (Extract)
+| Tag | Type | Capacity (m³/hr) | Head (m) | Motor (kW) | Status |
+|-----|------|-----------------|----------|-----------|--------|
+| P-FW-101A | Centrifugal (Electric) | 1200 | 95 | 450 | Active |
+| P-FW-101B | Centrifugal (Electric) | 1200 | 95 | 450 | Standby |
+| P-FW-102 | Diesel Engine Driven | 1200 | 95 | 500 | Emergency |
+| P-FW-103 | Jockey Pump | 50 | 100 | 22 | Active |
+
+5. INSPECTION AND TESTING
+5.1 Fire water pumps shall be test-run weekly for a minimum of 30 minutes each.
+5.2 Fire hydrants shall be inspected quarterly and tested annually.
+5.3 All fire detection and alarm systems shall be tested semi-annually.
+5.4 Foam concentrate quality shall be tested annually by an approved laboratory.
+
+6. SAFETY VALVE DATA — CDU PRESSURE RELIEF
+| Tag | Set Pressure (kg/cm²) | Design Temp (°C) | Orifice | Fluid | Capacity (kg/hr) |
+|-----|----------------------|------------------|---------|-------|------------------|
+| PSV-1001 | 4.5 | 370 | T | Crude Mix | 185,000 |
+| PSV-1002 | 12.0 | 180 | P | Naphtha | 42,000 |
+| PSV-1003 | 8.5 | 250 | R | HSD | 68,000 |
+| PSV-1004 | 3.2 | 410 | T | Residue | 210,000 |

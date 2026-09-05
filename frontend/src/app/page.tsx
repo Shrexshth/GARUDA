@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import AgentCard from "@/components/ui/AgentCard";
 import InputBar from "@/components/ui/InputBar";
@@ -25,6 +26,11 @@ const AGENTS = [
 
 export default function HomePage() {
   const [recentSessions] = useState<RecentSession[]>([]);
+  const router = useRouter();
+
+  const handleSearch = (query: string) => {
+    router.push(`/agents/reasoning?q=${encodeURIComponent(query)}`);
+  };
 
   return (
     <AppShell>
@@ -53,7 +59,7 @@ export default function HomePage() {
 
           {/* Input Bar */}
           <div className="pt-space-md pb-space-xs mt-auto">
-            <InputBar placeholder="Initiate a query or ask an agent to start a workflow..." />
+            <InputBar placeholder="Initiate a query or ask an agent to start a workflow..." onSubmit={handleSearch} />
           </div>
         </div>
 

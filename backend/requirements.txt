@@ -6,3 +6,9 @@ openpyxl
 python-pptx
 pydantic
 pyyaml
+docxtpl
+python-dotenv
+langgraph
+langchain-community
+requests
+python-multipart

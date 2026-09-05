@@ -1,36 +1,50 @@
-import yaml
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.core.config import settings
 import uvicorn
+from dotenv import load_dotenv
 
-app = FastAPI(title="GAURDA Backend")
+load_dotenv()
 
-# Allow frontend to communicate
+app = FastAPI(title="GAURDA Backend API")
+
+# Dynamically load CORS configuration
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+
+from backend.api import scan, document, code, knowledge, approval, reasoning
+
+# Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For production, restrict to frontend URL
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include routers
+app.include_router(scan.router, prefix="/api/agents/scan", tags=["Scan"])
+app.include_router(document.router, prefix="/api/agents/document", tags=["Document"])
+app.include_router(code.router, prefix="/api/agents/code", tags=["Code"])
+app.include_router(knowledge.router, prefix="/api/agents/kb", tags=["Knowledge"])
+app.include_router(approval.router, prefix="/api/agents/approval", tags=["Approval"])
+app.include_router(reasoning.router, prefix="/api/agents/reasoning", tags=["Reasoning"])
+
+
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "service": "GAURDA API"}
-
-@app.get("/api/routing")
-def get_routing():
-    try:
-        # Resolve path relative to this file to find models/routing.yaml
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        routing_file = os.path.join(base_dir, "models", "routing.yaml")
-        
-        with open(routing_file, 'r') as f:
-            routing_config = yaml.safe_load(f)
-        return routing_config
-    except Exception as e:
-        return {"error": f"Could not load routing config: {str(e)}"}
+    """
+    Health check endpoint that returns backend status and active configuration.
+    """
+    return {
+        "status": "online",
+        "service": "GAURDA API",
+        "config": settings.dict()
+    }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

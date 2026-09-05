@@ -1,8 +1,7 @@
 global:
-  ollama_base_url: "http://127.0.0.1:11434"
+  ollama_base_url: "http://localhost:11434"
 
 routes:
-  text_reasoning: "llama3.2"
-  code_gen: "llama3.2"
-  image_ocr: "llava:7b"
+  vision_task: "llava:7b" # Qwen2.5-VL isn't natively on standard Ollama library yet, so fallback to llava for vision stability
+  reasoning_task: "qwen2.5:7b"
   embeddings: "nomic-embed-text"

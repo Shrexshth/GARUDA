@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AppShell from "@/components/layout/AppShell";
 import Card from "@/components/ui/Card";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -21,13 +21,54 @@ interface ScanSession {
   id: string;
   fileName: string;
   timestamp: string;
-  pageCount: number;
+  status: "scanning" | "completed" | "error";
 }
 
 export default function ScanAgentPage() {
-  const [extractedData] = useState<ExtractedRow[]>([]);
-  const [scanSessions] = useState<ScanSession[]>([]);
+  const [extractedData, setExtractedData] = useState<ExtractedRow[]>([]);
+  const [scanSessions, setScanSessions] = useState<ScanSession[]>([]);
   const [activeView, setActiveView] = useState<"structured" | "original">("structured");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const newSession: ScanSession = {
+      id: Date.now().toString(),
+      fileName: file.name,
+      timestamp: new Date().toLocaleTimeString(),
+      status: "scanning"
+    };
+
+    setScanSessions(prev => [newSession, ...prev]);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/agents/scan/upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setExtractedData(result.data || []);
+        setScanSessions(prev => 
+          prev.map(s => s.id === newSession.id ? { ...s, status: "completed" } : s)
+        );
+      } else {
+        throw new Error(result.detail || "Scan failed");
+      }
+    } catch (error) {
+      console.error(error);
+      setScanSessions(prev => 
+        prev.map(s => s.id === newSession.id ? { ...s, status: "error" } : s)
+      );
+    }
+  };
 
   return (
     <AppShell>
@@ -51,7 +92,17 @@ export default function ScanAgentPage() {
           </div>
 
           {/* Upload Dropzone */}
-          <div className="relative group cursor-pointer rounded-[20px] bg-surface-container-low/70 hover:bg-surface-container-low transition-all duration-200 p-space-xl text-center shadow-sm flex flex-col items-center justify-center">
+          <div 
+            className="relative group cursor-pointer rounded-[20px] bg-surface-container-low/70 hover:bg-surface-container-low transition-all duration-200 p-space-xl text-center shadow-sm flex flex-col items-center justify-center"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              className="hidden" 
+              accept="image/*,.pdf"
+            />
             <div className="w-14 h-14 rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform duration-200 mb-space-sm">
               <span className="material-symbols-outlined text-[30px]">cloud_upload</span>
             </div>
@@ -95,7 +146,7 @@ export default function ScanAgentPage() {
 
             {extractedData.length === 0 ? (
               <EmptyState icon="document_scanner" title="Upload a document to get started" description="Extracted equipment schedules, spec tables, and line tags will appear here." />
-            ) : (
+            ) : activeView === "structured" ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[720px]">
                   <thead>
@@ -109,24 +160,32 @@ export default function ScanAgentPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-container-low">
-                    {extractedData.map((row) => (
-                      <tr key={row.tag} className="hover:bg-surface-container-low/40 transition-colors">
+                    {extractedData.map((row, i) => (
+                      <tr key={row.tag || i} className="hover:bg-surface-container-low/40 transition-colors">
                         <td className="py-4 px-4">
-                          <span className="text-headline-sm font-semibold text-on-surface">{row.tag}</span>
+                          <span className="text-headline-sm font-semibold text-on-surface">{row.tag || "N/A"}</span>
                           <br />
-                          <span className="text-label-sm font-semibold text-secondary">{row.type}</span>
+                          <span className="text-label-sm font-semibold text-secondary">{row.type || "N/A"}</span>
                         </td>
-                        <td className="py-4 px-4 text-body-md text-on-surface">{row.description}</td>
-                        <td className="py-4 px-4 text-body-md text-on-surface">{row.flowRate}</td>
-                        <td className="py-4 px-4 text-body-md text-on-surface">{row.suctionPress}</td>
-                        <td className="py-4 px-4 text-body-md text-on-surface">{row.dischargePress}</td>
+                        <td className="py-4 px-4 text-body-md text-on-surface">{row.description || "N/A"}</td>
+                        <td className="py-4 px-4 text-body-md text-on-surface">{row.flowRate || "N/A"}</td>
+                        <td className="py-4 px-4 text-body-md text-on-surface">{row.suctionPress || "N/A"}</td>
+                        <td className="py-4 px-4 text-body-md text-on-surface">{row.dischargePress || "N/A"}</td>
                         <td className="py-4 px-4 text-right">
-                          <StatusBadge label={row.status} variant="success" icon="check_circle" />
+                          <StatusBadge label={row.status || "Extracted"} variant="success" icon="check_circle" />
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-space-xl min-h-[300px] border-2 border-dashed border-surface-container-high rounded-xl bg-surface-container-lowest">
+                 <span className="material-symbols-outlined text-[48px] text-surface-container-highest mb-space-sm">image</span>
+                 <h3 className="text-headline-sm font-semibold text-on-surface mb-2">Original Document View</h3>
+                 <p className="text-body-sm text-secondary text-center max-w-sm">
+                   The raw scanned blueprint or P&ID would be displayed here for visual verification against the extracted data.
+                 </p>
               </div>
             )}
           </Card>
@@ -139,7 +198,19 @@ export default function ScanAgentPage() {
             <EmptyState icon="photo_camera" title="No scans yet" description="Upload a document to start a scan session." />
           ) : (
             <div className="flex flex-col gap-space-xs">
-              {/* Scan session rows would render here */}
+              {scanSessions.map(session => (
+                 <div key={session.id} className="p-3 bg-surface-container rounded-lg flex items-center justify-between">
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-body-sm font-medium text-on-surface truncate">{session.fileName}</span>
+                      <span className="text-label-sm text-secondary">{session.timestamp}</span>
+                    </div>
+                    <div className="shrink-0 ml-2">
+                      {session.status === 'scanning' && <span className="material-symbols-outlined text-secondary animate-spin text-[16px]">sync</span>}
+                      {session.status === 'completed' && <span className="material-symbols-outlined text-primary text-[16px]">check_circle</span>}
+                      {session.status === 'error' && <span className="material-symbols-outlined text-error text-[16px]">error</span>}
+                    </div>
+                 </div>
+              ))}
             </div>
           )}
         </div>

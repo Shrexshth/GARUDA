@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/layout/AppShell";
 import Card from "@/components/ui/Card";
 import InputBar from "@/components/ui/InputBar";
@@ -23,9 +23,45 @@ interface IndexedCorpus {
 }
 
 export default function KnowledgeBasePage() {
-  const [searchResults] = useState<SearchResult[]>([]);
-  const [citedSources] = useState<SearchResult[]>([]);
-  const [indexedCorpora] = useState<IndexedCorpus[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [citedSources, setCitedSources] = useState<SearchResult[]>([]);
+  const [indexedCorpora, setIndexedCorpora] = useState<IndexedCorpus[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/agents/kb/corpora")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setIndexedCorpora(data.corpora || []);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:8000/api/agents/kb/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSearchResults(data.results || []);
+        // Also mock cite them for the UI
+        setCitedSources(data.results ? [data.results[0]].filter(Boolean) : []);
+      } else {
+        throw new Error(data.detail || "Search failed");
+      }
+    } catch (err) {
+      console.error(err);
+      // In a real app we'd show a toast error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppShell>
@@ -51,10 +87,12 @@ export default function KnowledgeBasePage() {
           {/* Search & Results */}
           <div className="xl:col-span-8 flex flex-col gap-space-lg">
             {/* Search */}
-            <InputBar placeholder="Search standards, SOPs, or ask a question about refinery operations..." />
+            <InputBar placeholder="Search standards, SOPs, or ask a question about refinery operations..." onSubmit={handleSearch} />
+            
+            {loading && <div className="text-center text-secondary py-4 animate-pulse">Searching knowledge base...</div>}
 
             {/* Results */}
-            {searchResults.length === 0 ? (
+            {!loading && searchResults.length === 0 ? (
               <Card>
                 <EmptyState
                   icon="search"
@@ -91,14 +129,14 @@ export default function KnowledgeBasePage() {
             ) : (
               <div className="flex flex-col gap-space-xs">
                 {indexedCorpora.map((corpus, i) => (
-                  <div key={i} className="p-space-sm bg-surface-container-lowest rounded-xl flex justify-between items-center">
+                  <a key={i} href={`http://localhost:8000/api/agents/kb/corpus/${corpus.name}`} target="_blank" rel="noopener noreferrer" className="p-space-sm bg-surface-container-lowest rounded-xl flex justify-between items-center hover:bg-surface-container-low transition-colors group">
                     <div>
-                      <span className="text-label-md font-medium text-on-surface">{corpus.name}</span>
+                      <span className="text-label-md font-medium text-on-surface group-hover:text-primary transition-colors line-clamp-1">{corpus.name}</span>
                       <br />
                       <span className="text-label-sm font-semibold text-secondary">{corpus.documentCount} documents</span>
                     </div>
-                    <span className="text-label-sm font-semibold text-secondary">{corpus.lastUpdated}</span>
-                  </div>
+                    <span className="material-symbols-outlined text-secondary group-hover:text-primary text-[18px]">open_in_new</span>
+                  </a>
                 ))}
               </div>
             )}
@@ -109,7 +147,12 @@ export default function KnowledgeBasePage() {
                 <p className="text-body-sm text-secondary">Sources cited in responses will appear here.</p>
               ) : (
                 <div className="flex flex-col gap-space-xs">
-                  {/* cited sources would render here */}
+                  {citedSources.map((source, i) => (
+                    <div key={i} className="p-space-sm bg-surface-container-lowest rounded-xl">
+                      <span className="text-label-md font-medium text-on-surface line-clamp-1">{source.title}</span>
+                      <span className="text-label-sm text-secondary">{source.source}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

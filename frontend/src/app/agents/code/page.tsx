@@ -27,9 +27,75 @@ interface ExecutionSession {
 }
 
 export default function CodeAgentPage() {
-  const [calculationResults] = useState<CalculationResult[]>([]);
-  const [executionOutput] = useState<CodeBlock | null>(null);
-  const [executionHistory] = useState<ExecutionSession[]>([]);
+  const [calculationResults, setCalculationResults] = useState<CalculationResult[]>([]);
+  const [executionOutput, setExecutionOutput] = useState<CodeBlock | null>(null);
+  const [executionHistory, setExecutionHistory] = useState<ExecutionSession[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (prompt: string) => {
+    setLoading(true);
+    setExecutionOutput({ language: "python", code: "Generating code...", output: "" });
+    
+    // Add to history as running
+    const newSession: ExecutionSession = {
+      id: Date.now().toString(),
+      title: prompt.slice(0, 30) + "...",
+      timestamp: new Date().toLocaleTimeString(),
+      status: "running"
+    };
+    setExecutionHistory([newSession, ...executionHistory]);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/agents/code/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Find the generated code from messages
+        const messages = data.messages || [];
+        let generatedCode = "";
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const content = messages[i].content || "";
+          const match = content.match(/```python\n([\s\S]*?)\n```/);
+          if (match) {
+            generatedCode = match[1];
+            break;
+          }
+        }
+        
+        const toolResult = data.tool_result || {};
+        
+        setExecutionOutput({
+          language: "python",
+          code: generatedCode || "No code generated.",
+          output: toolResult.success 
+            ? toolResult.stdout 
+            : `Error:\n${toolResult.stderr}`
+        });
+
+        // Update history
+        setExecutionHistory((prev) => 
+          prev.map((s) => s.id === newSession.id ? { ...s, status: toolResult.success ? "completed" : "error" } : s)
+        );
+      } else {
+        throw new Error(data.detail || "Failed to execute.");
+      }
+    } catch (err: any) {
+      setExecutionOutput({
+        language: "python",
+        code: "",
+        output: `Request Failed: ${err.message}`
+      });
+      setExecutionHistory((prev) => 
+        prev.map((s) => s.id === newSession.id ? { ...s, status: "error" } : s)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppShell>
@@ -68,7 +134,7 @@ export default function CodeAgentPage() {
                 </span>
                 <span className="text-label-md font-medium text-secondary">Prompt & Synthesis Request</span>
               </div>
-              <InputBar placeholder="Describe a calculation — e.g., Mass flow rate across orifice plate FE-104..." />
+              <InputBar placeholder="Describe a calculation — e.g., Mass flow rate across orifice plate FE-104..." onSubmit={handleSubmit} />
             </Card>
 
             {/* Execution Block */}
@@ -88,7 +154,28 @@ export default function CodeAgentPage() {
               </div>
             ) : (
               <div className="bg-primary-container text-surface-bright rounded-2xl overflow-hidden shadow-md">
-                {/* Code execution output would render here */}
+                <div className="px-space-md py-3 flex items-center justify-between border-b border-surface-container-lowest/10">
+                   <div className="flex items-center gap-space-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-error" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-outline" />
+                      </div>
+                      <span className="text-label-sm font-semibold text-surface-container-lowest/70">sandbox_exec.py</span>
+                   </div>
+                   {loading && <span className="text-label-sm text-secondary animate-pulse">Running...</span>}
+                </div>
+                <div className="p-space-md bg-surface-container-lowest/5 overflow-x-auto">
+                  <pre className="text-body-sm font-mono text-secondary-fixed">
+                    {executionOutput.code}
+                  </pre>
+                </div>
+                <div className="p-space-md bg-surface-container-lowest/20 border-t border-surface-container-lowest/10">
+                  <span className="text-label-sm font-semibold text-surface-container-lowest/50 uppercase tracking-wider mb-2 block">Output</span>
+                  <pre className="text-body-sm font-mono text-on-primary">
+                    {executionOutput.output || "No output"}
+                  </pre>
+                </div>
               </div>
             )}
 
@@ -116,7 +203,19 @@ export default function CodeAgentPage() {
               <EmptyState icon="history" title="No executions yet" description="Past calculations and code runs will appear here." />
             ) : (
               <div className="flex flex-col gap-space-xs">
-                {/* Execution history rows would render here */}
+                {executionHistory.map(session => (
+                   <div key={session.id} className="p-3 bg-surface-container rounded-lg flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-body-sm font-medium text-on-surface">{session.title}</span>
+                        <span className="text-label-sm text-secondary">{session.timestamp}</span>
+                      </div>
+                      <div>
+                        {session.status === 'running' && <span className="material-symbols-outlined text-secondary animate-spin text-[16px]">sync</span>}
+                        {session.status === 'completed' && <span className="material-symbols-outlined text-primary text-[16px]">check_circle</span>}
+                        {session.status === 'error' && <span className="material-symbols-outlined text-error text-[16px]">error</span>}
+                      </div>
+                   </div>
+                ))}
               </div>
             )}
           </aside>
