@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-brand-text bg-white antialiased selection:bg-mint-200 selection:text-forest-950;
+  }
+}
+
+@layer utilities {
+
+  
+  .dark-dot-matrix {
+    background-image: radial-gradient(rgba(52, 211, 153, 0.25) 1.2px, transparent 1.2px);
+    background-size: 12px 12px;
+  }
+  
+  .agent-card-transition {
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .agent-card-transition:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px -4px rgba(18, 53, 39, 0.08);
+    border-color: #B9DEC6;
+  }
+  
+  /* Reasoning Workspace Custom Styles */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #B6E6CB;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #84D9A7;
+  }
+  .zerohash-gradient-bg {
+    background: radial-gradient(circle at 50% 0%, #D8F5E5 0%, #E9F8EF 35%, #F4FAF6 70%, #F9FCFA 100%);
+  }
+  .zerohash-card-glow {
+    box-shadow: 0 10px 25px -5px rgba(18, 53, 39, 0.06), 0 8px 10px -6px rgba(18, 53, 39, 0.04);
+  }
+  .zerohash-dark-glow {
+    box-shadow: 0 12px 30px -4px rgba(8, 37, 25, 0.35), inset 0 1px 0 rgba(78, 203, 140, 0.2);
+  }
+}
