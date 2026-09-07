@@ -134,9 +134,9 @@ export default function EnterpriseAIPipeline() {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-[14px] overflow-hidden font-sans w-full max-w-4xl mx-auto shadow-sm">
+    <div className="w-full overflow-hidden rounded-[14px] border border-slate-200 bg-white font-sans shadow-sm">
       {/* Header */}
-      <div className="px-[18px] py-[11px] border-b border-slate-200 flex items-center justify-between">
+      <div className="px-[40px] py-[11px] border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-[7px]">
           <motion.span
             className="w-[6px] h-[6px] rounded-full bg-green-500 inline-block"
@@ -153,7 +153,12 @@ export default function EnterpriseAIPipeline() {
       </div>
 
       {/* SVG Pipeline Visualization */}
-      <svg width="100%" viewBox="0 0 580 172" className="block">
+      <svg
+  width="100%"
+  viewBox="0 0 580 172"
+  preserveAspectRatio="none"
+  className="block h-[260px] w-full"
+>
         <defs>
           <marker
             id="ma"

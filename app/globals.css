@@ -138,3 +138,109 @@ html {
     @apply font-sans;
   }
 }
+
+/* ===============================
+   GARUDA MOTION + COLOR EFFECTS
+================================ */
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.12);
+  }
+
+  50% {
+    box-shadow:
+      0 0 35px rgba(59, 130, 246, 0.28),
+      0 0 70px rgba(99, 102, 241, 0.12);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.garuda-gradient {
+  background: linear-gradient(
+    120deg,
+    #0a2540,
+    #2563eb,
+    #7c3aed,
+    #0ea5e9,
+    #0a2540
+  );
+
+  background-size: 300% 300%;
+
+  animation: gradientMove 8s ease infinite;
+}
+
+.garuda-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.garuda-glow {
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+.garuda-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.garuda-card::before {
+  content: "";
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 60%;
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.08),
+    transparent
+  );
+
+  transform: translateX(-100%);
+
+  transition: none;
+}
+
+.garuda-card:hover::before {
+  animation: shimmer 1.2s ease;
+}

@@ -18,38 +18,48 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="flex h-screen w-72 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2 px-4 py-4">
-        <div className="h-8 w-8 rounded-md bg-primary" />
-        <span className="font-semibold text-sm">GARUDA</span>
-      </div>
+    <aside className="flex h-screen w-100 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+      
+      {/* GARUDA Logo */}
+      <Link
+  href="/"
+  className="flex items-center gap-3 px-5 py-5 transition-opacity hover:opacity-80"
+>
+  <div className="h-9 w-9 rounded-lg bg-primary" />
+
+  <span className="text-base font-semibold tracking-tight">
+    GARUDA
+  </span>
+</Link>
 
       <Separator />
 
       {/* Agent Switcher */}
-      <div className="flex flex-col gap-1 px-2 py-3">
+      <div className="flex flex-col gap-2 px-3 py-4">
         {agents.map(({ name, icon: Icon, href }) => (
           <Link
             key={name}
             href={href}
             className={buttonVariants({
               variant: pathname === href ? "secondary" : "ghost",
-              className: "justify-start gap-3 px-3",
+              className:
+                "h-11 w-full justify-start gap-3 px-4 text-sm",
             })}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-[18px] w-[18px]" />
             {name}
           </Link>
         ))}
       </div>
 
-      {/* Pipeline View link */}
-      <div className="px-2 pb-2">
+      {/* Pipeline View */}
+      <div className="px-3 pb-4">
         <Link
           href="/pipeline"
           className={buttonVariants({
             variant: pathname === "/pipeline" ? "secondary" : "ghost",
-            className: "w-full justify-start gap-3 px-3",
+            className:
+              "h-11 w-full justify-start gap-3 px-4 text-sm",
           })}
         >
           Pipeline View
@@ -59,18 +69,24 @@ export function Sidebar() {
       <Separator />
 
       {/* Recent Sessions */}
-      <div className="px-4 py-3 text-xs font-medium text-muted-foreground">
+      <div className="px-5 py-4 text-sm font-medium text-muted-foreground">
         Recent Sessions
       </div>
-      <ScrollArea className="flex-1 px-2">
-        <div className="flex flex-col gap-1 pb-4">
+
+      <ScrollArea className="flex-1 px-3">
+        <div className="flex flex-col gap-2 pb-5">
           {recentSessions.map((s, i) => (
             <button
               key={i}
-              className="flex flex-col items-start rounded-md px-3 py-2 text-left hover:bg-muted transition-colors"
+              className="flex w-full flex-col items-start rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted"
             >
-              <div className="text-xs font-medium text-muted-foreground">{s.agent}</div>
-              <div className="truncate text-xs">{s.label}</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                {s.agent}
+              </div>
+
+              <div className="mt-1 truncate text-sm">
+                {s.label}
+              </div>
             </button>
           ))}
         </div>
@@ -78,12 +94,17 @@ export function Sidebar() {
 
       <Separator />
 
-      <div className="flex items-center gap-2 px-4 py-3">
-        <Avatar className="h-7 w-7">
+      {/* User */}
+      <div className="flex items-center gap-3 px-5 py-4">
+        <Avatar className="h-9 w-9">
           <AvatarFallback>PA</AvatarFallback>
         </Avatar>
-        <span className="text-xs text-muted-foreground">Piyush A.</span>
+
+        <span className="text-sm text-muted-foreground">
+          Piyush A.
+        </span>
       </div>
+
     </aside>
   )
 }
