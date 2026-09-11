@@ -94,11 +94,11 @@ flowchart TD
 
 | Agent | Purpose | Capabilities |
 |-------|---------|--------------|
-| **Reasoning Agent** | General technical queries & troubleshooting. | • Synthesizes inspection logs and vibration metrics.<br>• Answers complex multi-step engineering queries.<br>• Persistent chat history via SQLite. |
-| **Scan & Vision Agent** | Extracts data from physical engineering schematics. | • Parses complex P&IDs and pump data sheets.<br>• Digitizes tabular equipment schedules via local OCR.<br>• Returns structured JSON for downstream agents. |
+| **Reasoning Agent** | General technical queries & troubleshooting. | • Synthesizes inspection logs and vibration metrics.<br>• Answers complex multi-step engineering queries.<br>• Persistent chat history via SQLite with auto-scroll UI constraint. |
+| **Scan & Vision Agent** | Extracts data from physical engineering schematics. | • Context-Aware Routing: Sends images to local Vision LLM and multi-page PDFs to Reasoning Text LLM.<br>• Extracts full-text from 100+ page PDFs via PyMuPDF.<br>• Dynamic UI Tables auto-render any JSON schema inferred by the LLM. |
 | **Document Agent** | Drafts standardized NFAs and compliance notes. | • Generates formal approval memos (MRPL format).<br>• Exports native `.docx` deliverables via `docxtpl`. |
 | **Code & Calculation Agent** | Computes orifice flow rates and fluid dynamics. | • Writes and executes sandboxed Python (math, json, datetime).<br>• Self-correcting: auto-retries failed code up to 2 times.<br>• Strict 5-second timeout kills infinite loops. |
-| **Knowledge Base Agent** | Searches indexed OISD standards & refinery SOPs. | • Semantic search across 20+ indexed document chunks.<br>• Returns relevance-scored results with source citations.<br>• Embedded ChromaDB — no separate server process. |
+| **Knowledge Base Agent** | Searches indexed OISD standards & refinery SOPs. | • Massive scale data ingestion pipeline (`pytesseract` OCR + PyMuPDF).<br>• Semantic search across thousands of indexed document chunks.<br>• Embedded ChromaDB — no separate server process. |
 | **Approval & Workflow Agent** | Tracks multi-tier approval chains and signatures. | • SQLite-backed task state management.<br>• Immutable audit trail for every status change.<br>• Full CRUD pipeline for approval workflows. |
 
 ---
@@ -138,6 +138,7 @@ This pipeline ensures that an engineer goes from a raw scan to a fully formatted
 | **Backend** | FastAPI, Python 3.11+, LangGraph (orchestration) |
 | **Local Inference** | Ollama (serving open-weight models locally) |
 | **Vector DB / RAG** | ChromaDB (embedded PersistentClient mode) |
+| **Data Ingestion** | PyMuPDF (PDF text extraction), Pytesseract (fast image OCR) |
 | **Persistence** | SQLite (chat history, task state, audit trail) |
 | **Code Execution** | Sandboxed subprocess (env-stripped, timeout-enforced) |
 | **Deliverables** | `docxtpl`, `python-docx`, `openpyxl`, `python-pptx` |
@@ -160,6 +161,7 @@ The system is architected to seamlessly scale to dedicated bare-metal GPU server
 ### Prerequisites
 - Node.js 20+
 - Python 3.11+
+- Tesseract OCR (`brew install tesseract`)
 - [Ollama](https://ollama.com/download) (installed and running)
 
 ### Installation
@@ -193,10 +195,11 @@ The system is architected to seamlessly scale to dedicated bare-metal GPU server
    ```
 
 5. **Seed the Knowledge Base**
-   Load the demo manuals (OISD standards, pump SOPs, inspection reports) into ChromaDB:
+   Load the demo manuals (OISD standards, pump SOPs, inspection reports) into ChromaDB using our high-speed ingestion pipelines:
    ```bash
    source venv/bin/activate
    python demo-data/seed_knowledge_base.py
+   python demo-data/seed_images_ocr.py
    ```
 
 6. **Run the Application**
@@ -214,7 +217,7 @@ The system is architected to seamlessly scale to dedicated bare-metal GPU server
 GARUDA/
 ├── backend/                # FastAPI backend
 │   ├── api/                # Route handlers for all 6 agents
-│   │   ├── scan.py         # Vision/OCR upload endpoint
+│   │   ├── scan.py         # Dynamic Context-Aware Model Routing
 │   │   ├── reasoning.py    # Chat endpoint with SQLite history
 │   │   ├── code.py         # Code generation + sandbox execution
 │   │   ├── document.py     # NFA drafting + docx export
@@ -236,9 +239,11 @@ GARUDA/
 │   └── routing.yaml        # Ollama model ↔ task mapping
 ├── rag/                    # ChromaDB persistent storage
 ├── demo-data/              # Reusable demo inputs
-│   ├── manuals/            # OISD, SOP, and inspection report texts
-│   ├── calculations/       # Pre-written engineering calc prompts
-│   └── seed_knowledge_base.py  # Ingestion script
+│   ├── 01_Annual_Reports/  # Multi-page PDF test vectors
+│   ├── 06_Inspection_Reports/ # Highly technical engineering PDFs
+│   ├── 0__raw_data/        # 90+ OCR training images
+│   ├── seed_knowledge_base.py # PyMuPDF RAG ingester
+│   └── seed_images_ocr.py  # High-speed Pytesseract image ingester
 ├── tests/                  # Smoke test suite
 │   └── smoke_test.py       # 14 automated tests
 ├── infra/                  # Security & sovereignty
@@ -274,10 +279,13 @@ Verify air-gap network isolation:
 - [x] Implement all 6 agent backends with FastAPI endpoints
 - [x] Wire all 6 frontend pages to backend via React fetch
 - [x] Build secure subprocess sandbox (no Docker, env-stripped, timeout-enforced)
-- [x] Implement ChromaDB embedded RAG with demo data ingestion
+- [x] Implement ChromaDB embedded RAG with massive data ingestion pipelines (PyMuPDF & Tesseract)
+- [x] Implement Context-Aware Routing for multi-page PDFs vs Images in Scan Agent
+- [x] Implement Dynamic UI tables mapping inferred JSON schemas
 - [x] Implement SQLite persistence (chat history, tasks, audit trail)
 - [x] Build `pfctl` network air-gap enforcement and verification
 - [x] Build automated smoke test suite (14 tests)
+- [x] Add automated clean-up sweeps for repo maintenance
 - [ ] Wire dynamic model-routing indicator in the UI
 - [ ] Add cross-agent pipeline (scan → KB → NFA → approval)
 - [ ] **Demo Target:** End-to-end NFA drafting pipeline with Ollama
