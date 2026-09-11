@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/logo.png" alt="GARUDA Logo" width="650" />
+  <img src="docs/assets/logo.png" alt="GARUDA Logo" width="500" />
   <br />
   <br />
   <p><b>A sovereign, on-premise agentic AI workbench for confidential industrial work.</b></p>
