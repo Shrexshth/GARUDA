@@ -26,7 +26,7 @@ export default function Sidebar({ recentItems = [] }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-full md:w-60 lg:w-[240px] shrink-0 bg-surface-container-low/40 md:rounded-l-[28px] flex flex-col justify-between p-space-md">
+    <aside className="w-full md:w-60 lg:w-[240px] shrink-0 bg-surface-container-low/40 flex flex-col justify-between p-space-md border-r border-surface-container/50">
       <div className="flex flex-col gap-space-lg">
         {/* Logo */}
         <div className="flex items-center gap-space-sm px-space-xs pt-space-xs">

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useTasks } from "@/context/TaskContext";
 import Card from "@/components/ui/Card";
 import InputBar from "@/components/ui/InputBar";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusBadge from "@/components/ui/StatusBadge";
+import ReactMarkdown from "react-markdown";
 
 interface SearchResult {
   id: string;
@@ -23,9 +25,93 @@ interface IndexedCorpus {
 }
 
 export default function KnowledgeBasePage() {
-  const [searchResults] = useState<SearchResult[]>([]);
-  const [citedSources] = useState<SearchResult[]>([]);
-  const [indexedCorpora] = useState<IndexedCorpus[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [citedSources, setCitedSources] = useState<SearchResult[]>([]);
+  const [indexedCorpora, setIndexedCorpora] = useState<IndexedCorpus[]>([]);
+  
+  const { tasks, registerTask, clearTask } = useTasks();
+  
+  const activeTask = Object.values(tasks).find(t => t.agent === "knowledge-base");
+  const loading = activeTask?.status === "running" || activeTask?.status === "pending";
+
+  useEffect(() => {
+    if (activeTask && (activeTask.status === "completed" || activeTask.status === "failed")) {
+      if (activeTask.status === "completed" && activeTask.result) {
+        const state = activeTask.result;
+        // LLM Synthesis is the last message
+        if (state.messages && state.messages.length > 0) {
+          const synthesis = state.messages[state.messages.length - 1].content;
+          const contexts = state.retrieved_context || [];
+          const formattedContexts = contexts.map((ctx: any, i: number) => {
+             // Handle both object and string formats for safety
+             if (typeof ctx === 'string') {
+               return {
+                 id: i.toString(),
+                 title: `Document Snippet ${i+1}`,
+                 source: "Knowledge Base",
+                 snippet: ctx,
+                 relevance: 0.95,
+                 tags: ["Retrieved"]
+               };
+             }
+             return {
+                 id: i.toString(),
+                 title: ctx.title || `Snippet ${i+1}`,
+                 source: ctx.source || "Knowledge Base",
+                 snippet: ctx.snippet || "",
+                 relevance: ctx.score || 0.95,
+                 tags: ["Retrieved"]
+             };
+          });
+          
+          setSearchResults([{
+            id: "synthesis",
+            title: "AI Synthesis",
+            source: "GAURDA Reasoning Engine",
+            snippet: synthesis,
+            relevance: 1.0,
+            tags: ["Synthesized"]
+          }, ...formattedContexts]);
+          
+          setCitedSources(formattedContexts);
+        }
+      } else {
+        setSearchResults([]);
+        setCitedSources([]);
+      }
+      clearTask(activeTask.id);
+    }
+  }, [activeTask, clearTask]);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/agents/kb/corpora")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setIndexedCorpora(data.corpora || []);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    try {
+      const res = await fetch("http://localhost:8000/api/agents/kb/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.task_id) {
+        registerTask(data.task_id, "knowledge-base");
+      } else {
+        throw new Error(data.detail || "Search failed to start");
+      }
+    } catch (err) {
+      console.error(err);
+      // In a real app we'd show a toast error
+    }
+  };
 
   return (
     <AppShell>
@@ -51,10 +137,12 @@ export default function KnowledgeBasePage() {
           {/* Search & Results */}
           <div className="xl:col-span-8 flex flex-col gap-space-lg">
             {/* Search */}
-            <InputBar placeholder="Search standards, SOPs, or ask a question about refinery operations..." />
+            <InputBar placeholder="Search standards, SOPs, or ask a question about refinery operations..." onSubmit={handleSearch} />
+            
+            {loading && <div className="text-center text-secondary py-4 animate-pulse">Searching knowledge base...</div>}
 
             {/* Results */}
-            {searchResults.length === 0 ? (
+            {!loading && searchResults.length === 0 ? (
               <Card>
                 <EmptyState
                   icon="search"
@@ -68,9 +156,15 @@ export default function KnowledgeBasePage() {
                   <Card key={result.id} className="flex flex-col gap-space-sm hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start justify-between">
                       <h3 className="text-headline-sm font-semibold text-on-surface">{result.title}</h3>
-                      <StatusBadge label={`${Math.round(result.relevance * 100)}% match`} variant="success" />
+                      {result.id !== "synthesis" && <StatusBadge label={`${Math.round(result.relevance * 100)}% match`} variant="success" />}
                     </div>
-                    <p className="text-body-md text-secondary">{result.snippet}</p>
+                    {result.id === "synthesis" ? (
+                      <div className="prose prose-sm max-w-none text-on-surface whitespace-pre-wrap font-serif">
+                        <ReactMarkdown>{result.snippet}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-body-md text-secondary">{result.snippet}</p>
+                    )}
                     <div className="flex items-center gap-space-xs">
                       <span className="text-label-sm font-semibold text-secondary">{result.source}</span>
                       {result.tags.map((tag, i) => (
@@ -91,14 +185,14 @@ export default function KnowledgeBasePage() {
             ) : (
               <div className="flex flex-col gap-space-xs">
                 {indexedCorpora.map((corpus, i) => (
-                  <div key={i} className="p-space-sm bg-surface-container-lowest rounded-xl flex justify-between items-center">
+                  <a key={i} href={`http://localhost:8000/api/agents/kb/corpus/${corpus.name}`} target="_blank" rel="noopener noreferrer" className="p-space-sm bg-surface-container-lowest rounded-xl flex justify-between items-center hover:bg-surface-container-low transition-colors group">
                     <div>
-                      <span className="text-label-md font-medium text-on-surface">{corpus.name}</span>
+                      <span className="text-label-md font-medium text-on-surface group-hover:text-primary transition-colors line-clamp-1">{corpus.name}</span>
                       <br />
                       <span className="text-label-sm font-semibold text-secondary">{corpus.documentCount} documents</span>
                     </div>
-                    <span className="text-label-sm font-semibold text-secondary">{corpus.lastUpdated}</span>
-                  </div>
+                    <span className="material-symbols-outlined text-secondary group-hover:text-primary text-[18px]">open_in_new</span>
+                  </a>
                 ))}
               </div>
             )}
@@ -109,7 +203,12 @@ export default function KnowledgeBasePage() {
                 <p className="text-body-sm text-secondary">Sources cited in responses will appear here.</p>
               ) : (
                 <div className="flex flex-col gap-space-xs">
-                  {/* cited sources would render here */}
+                  {citedSources.map((source, i) => (
+                    <div key={i} className="p-space-sm bg-surface-container-lowest rounded-xl">
+                      <span className="text-label-md font-medium text-on-surface line-clamp-1">{source.title}</span>
+                      <span className="text-label-sm text-secondary">{source.source}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

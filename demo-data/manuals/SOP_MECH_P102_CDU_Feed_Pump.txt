@@ -1,0 +1,44 @@
+MRPL STANDARD OPERATING PROCEDURE — SOP/MECH/P-102
+Equipment: Centrifugal Pump P-102A/B (CDU Feed Pump)
+Revision: 03 | Date: 2024-08-15
+
+1. PURPOSE
+To establish safe and standardized operating procedures for starting, monitoring, and shutting down centrifugal feed pump P-102A/B in the Crude Distillation Unit (CDU).
+
+2. OPERATING PARAMETERS
+| Parameter | Normal Range | Alarm Low | Alarm High | Trip |
+|-----------|-------------|-----------|------------|------|
+| Suction Pressure | 2.5–3.5 kg/cm² | 2.0 | 4.0 | 1.5 |
+| Discharge Pressure | 18–22 kg/cm² | 16.0 | 24.0 | 14.0 |
+| Flow Rate | 350–450 m³/hr | 300 | 500 | 250 |
+| Bearing Temp (DE) | 55–70 °C | — | 85 | 95 |
+| Bearing Temp (NDE) | 50–65 °C | — | 80 | 90 |
+| Vibration (DE) | < 4.5 mm/s | — | 7.1 | 11.2 |
+| Vibration (NDE) | < 4.0 mm/s | — | 6.5 | 10.0 |
+| Motor Current | 180–220 A | 150 | 250 | 280 |
+
+3. STARTUP PROCEDURE
+3.1 Confirm suction valve is fully open and discharge valve is throttled to 15%.
+3.2 Verify lube oil level in bearing housing is at mid-sight-glass.
+3.3 Check that mechanical seal flush system is operational (pot pressure > 1.0 kg/cm² above suction).
+3.4 Start the pump motor from the local control panel or DCS.
+3.5 Slowly open the discharge valve to achieve rated flow within 3 minutes.
+3.6 Monitor vibration, bearing temperature, and motor current for 15 minutes after start.
+
+4. NORMAL SHUTDOWN PROCEDURE
+4.1 Gradually close the discharge valve over 2 minutes.
+4.2 Stop the motor after flow drops below 50 m³/hr.
+4.3 Close the suction valve only if the pump is being isolated for maintenance.
+4.4 Continue lube oil circulation for 15 minutes after shutdown.
+
+5. EMERGENCY SHUTDOWN TRIGGERS
+- Bearing temperature > 95°C on either end
+- Vibration > 11.2 mm/s on Drive End
+- Motor current > 280 A sustained for > 10 seconds
+- Loss of suction pressure below 1.5 kg/cm²
+- Mechanical seal failure (visible fluid leak > 60 drops/min)
+
+6. MAINTENANCE NOTES
+- Impeller clearance to be checked every 8000 running hours per API 610 Section 8.3.
+- Mechanical seal replacement interval: 12,000 hours or on failure.
+- Coupling alignment to be verified after any maintenance involving bearing removal.

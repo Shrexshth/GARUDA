@@ -1,0 +1,30 @@
+MRPL INSPECTION REPORT — CDU/INSP/2024/0847
+Equipment: Heat Exchanger E-301 (Crude Pre-heater)
+Inspector: K. Raghunathan | Date: 2024-07-22
+
+1. EXECUTIVE SUMMARY
+Scheduled inspection of shell-and-tube heat exchanger E-301 in the CDU pre-heat train revealed moderate fouling on the tube side and surface pitting on 12 tubes in the upper bundle. No through-wall defects were detected. The exchanger is cleared for continued operation with recommendations for corrective action at the next planned turnaround.
+
+2. INSPECTION SCOPE
+- Visual inspection of tube sheets (both ends)
+- Eddy Current Testing (ECT) on all 486 tubes
+- Ultrasonic Thickness (UT) measurement on shell nozzles and shell body at 8 grid points
+- Hydrostatic test at 1.5x design pressure (tube side)
+
+3. FINDINGS
+| Item | Location | Finding | Severity | Action |
+|------|----------|---------|----------|--------|
+| 1 | Tube Sheet (Channel End) | Light erosion at tube-to-tubesheet welds in rows 3-5 | Minor | Monitor at next inspection |
+| 2 | Tubes (Row 7, positions 12-18) | Surface pitting, max depth 0.8mm (wall = 2.11mm) | Moderate | Plug if depth exceeds 40% wall at next TA |
+| 3 | Tubes (Row 12, positions 3-8) | Surface pitting, max depth 0.5mm | Minor | Monitor |
+| 4 | Shell Nozzle N1 (Inlet) | UT reading 8.2mm (original 9.53mm) → 14% loss | Moderate | CML point, re-measure in 12 months |
+| 5 | Shell Body (Grid Point 6) | UT reading 11.8mm (original 12.70mm) → 7% loss | Minor | Normal corrosion rate |
+| 6 | Channel Cover Gasket | Slight leakage observed at bolt 14 | Minor | Re-torque or replace gasket at next opportunity |
+
+4. RECOMMENDATIONS
+4.1 Schedule tube plugging for Row 7 positions 15-17 at the upcoming turnaround (estimated March 2025).
+4.2 Install Condition Monitoring Location (CML) on shell nozzle N1 with 12-month re-inspection interval.
+4.3 Increase tube-side chemical cleaning frequency from 18 months to 12 months to manage fouling rate.
+4.4 No pressure de-rating required at this time.
+
+5. NEXT INSPECTION DUE: July 2025 (12-month interval) or at next planned turnaround, whichever is earlier.
