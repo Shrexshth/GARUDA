@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="docs/assets/logo.png" alt="GAURDA Logo" width="150" />
   <h1>GAURDA</h1>
   <p><b>A sovereign, on-premise agentic AI workbench for confidential industrial work.</b></p>
 
