@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/assets/logo.png" alt="GAURDA Logo" width="150" />
-  <h1>GAURDA</h1>
+  <img src="docs/assets/logo.png" alt="GARUDA Logo" width="160" />
+  <h1>GARUDA</h1>
   <p><b>A sovereign, on-premise agentic AI workbench for confidential industrial work.</b></p>
 
   ![Status: Demo Ready](https://img.shields.io/badge/Status-Demo%20Ready-2d6a4f?style=flat-square)
@@ -9,14 +9,17 @@
   ![Built for: MRPL](https://img.shields.io/badge/Built%20for-MRPL-3b4252?style=flat-square)
   ![Platform: On-Premise](https://img.shields.io/badge/Platform-On--Premise-3b4252?style=flat-square)
   ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)
-  ![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs)
+  ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)
   ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)
 
+  <br />
+  <!-- Drop your banner image at docs/assets/banner.png -->
+  <img src="docs/assets/banner.png" alt="GARUDA System Banner" width="100%" onerror="this.style.display='none'" />
 </div>
 
 <br />
 
-**GAURDA is an entirely air-gapped, sovereign AI operating system that allows industrial engineers to parse P&IDs, draft compliance notes, run engineering calculations, and query plant documentation using state-of-the-art open-weight models — without a single byte of confidential data ever leaving the corporate network.**
+**GARUDA is an entirely air-gapped, sovereign AI operating system that allows industrial engineers to parse P&IDs, draft compliance notes, run engineering calculations, and query plant documentation using state-of-the-art open-weight models — without a single byte of confidential data ever leaving the corporate network.**
 
 ---
 
@@ -43,7 +46,7 @@ Refineries and Public Sector Undertakings (PSUs) generate immense volumes of hig
 ---
 
 ## The Solution
-GAURDA bridges this gap by bringing powerful agentic AI directly to the edge. It is a fully on-premise, multi-agent AI workbench designed explicitly for confidential industrial engineering.
+GARUDA bridges this gap by bringing powerful agentic AI directly to the edge. It is a fully on-premise, multi-agent AI workbench designed explicitly for confidential industrial engineering.
 - **Multi-Model Auto-Routing:** Dynamically routes queries to specialized local open-weight models (Qwen 2.5 for reasoning, LLaVA for vision) via a LangGraph state machine — ensuring only one model is loaded at a time to respect memory constraints.
 - **Agentic Multi-Step Execution:** Agents autonomously orchestrate complex workflows using local tools, from sandboxed Python data analysis to semantic document search.
 - **Multimodal OCR & Vision:** Extracts tabular specs, tags, and geometry directly from complex engineering PDFs and CAD exports.
@@ -57,7 +60,7 @@ GAURDA bridges this gap by bringing powerful agentic AI directly to the edge. It
 
 ```mermaid
 flowchart TD
-    subgraph GAURDA["100% On-Premise — Zero External Network Calls"]
+    subgraph GARUDA["100% On-Premise — Zero External Network Calls"]
         direction TB
         
         U([User Request]) --> R[LangGraph Router Node]
@@ -84,7 +87,7 @@ flowchart TD
     classDef highlight fill:#dce2f3,stroke:#585f6c,stroke-width:1.5px,color:#151c27
     classDef boundary fill:transparent,stroke:#585f6c,stroke-width:2px,stroke-dasharray: 5 5
     
-    class GAURDA boundary
+    class GARUDA boundary
     class U,Out highlight
 ```
 
@@ -148,7 +151,7 @@ This pipeline ensures that an engineer goes from a raw scan to a fully formatted
 
 ## Hardware & Deployment Model
 
-GAURDA operates entirely on-premise. For the purpose of the Smart India Hackathon demo, the entire architecture — inference, orchestration, UI, and RAG — runs concurrently on a single **MacBook Air M4 with 16GB of unified memory**.
+GARUDA operates entirely on-premise. For the purpose of the Smart India Hackathon demo, the entire architecture — inference, orchestration, UI, and RAG — runs concurrently on a single **MacBook Air M4 with 16GB of unified memory**.
 
 The LangGraph state machine enforces **strict sequential model execution** — only one LLM is loaded into memory at any time. This prevents OOM crashes and ensures stable performance under the 16GB constraint.
 
