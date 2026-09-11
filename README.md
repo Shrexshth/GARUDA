@@ -1,6 +1,7 @@
 <div align="center">
-  <img src="docs/assets/logo.png" alt="GARUDA Logo" width="160" />
-  <h1>GARUDA</h1>
+  <img src="docs/assets/logo.png" alt="GARUDA Logo" width="650" />
+  <br />
+  <br />
   <p><b>A sovereign, on-premise agentic AI workbench for confidential industrial work.</b></p>
 
   ![Status: Demo Ready](https://img.shields.io/badge/Status-Demo%20Ready-2d6a4f?style=flat-square)
@@ -11,10 +12,6 @@
   ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)
   ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)
   ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)
-
-  <br />
-  <!-- Drop your banner image at docs/assets/banner.png -->
-  <img src="docs/assets/banner.png" alt="GARUDA System Banner" width="100%" onerror="this.style.display='none'" />
 </div>
 
 <br />
