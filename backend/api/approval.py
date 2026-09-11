@@ -3,6 +3,8 @@ import sqlite3
 import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from backend.core.nodes import _call_ollama
+from backend.core.config import settings
 
 router = APIRouter()
 
@@ -85,11 +87,19 @@ async def update_task_status(request: TaskUpdate):
         # Update status
         cursor.execute("UPDATE tasks SET status = ? WHERE id = ?", (request.new_status, request.task_id))
         
+        # Make the agent active by having it draft a formal audit note
+        prompt = (
+            f"You are the MRPL Approval Agent. The task '{request.task_id}' has been updated from '{old_status}' to '{request.new_status}' by {request.actor}. "
+            f"Draft a short, formal 1-sentence audit log entry summarizing this state change for compliance."
+        )
+        llm_res = _call_ollama(model=settings.routes.reasoning_task, prompt=prompt)
+        audit_note = llm_res.get("response", f"Status changed from {old_status} to {request.new_status}").strip()
+        
         # Append to audit trail
         now = datetime.datetime.utcnow().isoformat()
         cursor.execute(
             "INSERT INTO audit_trail (task_id, action, actor, timestamp) VALUES (?, ?, ?, ?)",
-            (request.task_id, f"Status changed from {old_status} to {request.new_status}", request.actor, now)
+            (request.task_id, audit_note, request.actor, now)
         )
         
         conn.commit()

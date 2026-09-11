@@ -13,7 +13,7 @@ app = FastAPI(title="GAURDA Backend API")
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
 allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
 
-from backend.api import scan, document, code, knowledge, approval, reasoning
+from backend.api import scan, document, code, knowledge, approval, reasoning, tasks, orchestrator, infra
 
 # Add CORS Middleware
 app.add_middleware(
@@ -31,6 +31,9 @@ app.include_router(code.router, prefix="/api/agents/code", tags=["Code"])
 app.include_router(knowledge.router, prefix="/api/agents/kb", tags=["Knowledge"])
 app.include_router(approval.router, prefix="/api/agents/approval", tags=["Approval"])
 app.include_router(reasoning.router, prefix="/api/agents/reasoning", tags=["Reasoning"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
+app.include_router(orchestrator.router, prefix="/api/orchestrator", tags=["Orchestrator"])
+app.include_router(infra.router, prefix="/api/infra", tags=["Infra"])
 
 
 @app.get("/api/health")

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from backend.core.graph import app as workflow_app
 from backend.core.state import GraphState
+from backend.api.tasks import run_agent_task
 
 router = APIRouter()
 
@@ -9,10 +9,10 @@ class CodeRequest(BaseModel):
     prompt: str
 
 @router.post("/execute")
-async def execute_code_agent(request: CodeRequest):
+async def execute_code_agent(request: CodeRequest, background_tasks: BackgroundTasks):
     """
     Triggers the Reasoning agent to write python code based on a prompt,
-    then executes the Code Sandbox tool to run it securely.
+    then executes the Code Sandbox tool to run it securely in the background.
     """
     try:
         sys_prompt = f"""
@@ -35,16 +35,12 @@ async def execute_code_agent(request: CodeRequest):
             "tool_results": []
         }
         
-        result_state = workflow_app.invoke(initial_state)
-        
-        # Extract the last tool result
-        tool_results = result_state.get("tool_results", [])
-        last_result = tool_results[-1] if tool_results else None
+        task_id = run_agent_task(background_tasks, "code", initial_state)
         
         return {
             "success": True,
-            "tool_result": last_result,
-            "messages": result_state["messages"]
+            "task_id": task_id,
+            "status": "running"
         }
         
     except HTTPException:

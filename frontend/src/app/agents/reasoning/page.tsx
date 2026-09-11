@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
+import { useTasks } from "@/context/TaskContext";
 import InputBar from "@/components/ui/InputBar";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
+import AgentThinkingTrace from "@/components/ui/AgentThinkingTrace";
 
 interface ChatMessage {
   id: string;
@@ -32,11 +34,49 @@ const SUGGESTION_CARDS = [
 export default function ReasoningAgentPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<HistoryEntry[]>([]);
-  const [sessionId] = useState(() => Date.now().toString());
-  const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
+  const [sessionId, setSessionId] = useState(() => Date.now().toString());
+  const [visibleHistoryCount, setVisibleHistoryCount] = useState(5);
   const router = useRouter();
   const initialized = useRef(false);
+
+  const loadSession = async (sid: string) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/agents/reasoning/history/${sid}`);
+      const data = await res.json();
+      if (data.success && data.messages) {
+        setMessages(data.messages);
+        setSessionId(sid);
+      }
+    } catch (err) {
+      console.error("Failed to load session", err);
+    }
+  };
+
+  const { tasks, registerTask, clearTask } = useTasks();
+  
+  const activeTask = Object.values(tasks).find(t => t.agent === "reasoning");
+  const loading = activeTask?.status === "running" || activeTask?.status === "pending";
+
+  useEffect(() => {
+    if (activeTask && (activeTask.status === "completed" || activeTask.status === "failed")) {
+      if (activeTask.status === "completed" && activeTask.result) {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: activeTask.result.message?.content || "No response.",
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC'
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Error: ${activeTask.result?.error || "Chat failed"}`,
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC'
+        }]);
+      }
+      clearTask(activeTask.id);
+    }
+  }, [activeTask, clearTask]);
 
   useEffect(() => {
     fetch("http://localhost:8000/api/agents/reasoning/history")
@@ -50,11 +90,10 @@ export default function ReasoningAgentPage() {
   }, []);
 
   const handleSend = async (content: string, overrideMessages?: ChatMessage[]) => {
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content, timestamp: new Date().toLocaleTimeString() };
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content, timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC' };
     const currentMessages = overrideMessages || messages;
     const newMessages = [...currentMessages, userMsg];
     setMessages(newMessages);
-    setLoading(true);
 
     try {
       const res = await fetch("http://localhost:8000/api/agents/reasoning/chat", {
@@ -67,13 +106,8 @@ export default function ReasoningAgentPage() {
       });
       const data = await res.json();
       
-      if (res.ok && data.success) {
-        setMessages([...newMessages, {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.message.content || "No response.",
-          timestamp: new Date().toLocaleTimeString()
-        }]);
+      if (res.ok && data.success && data.task_id) {
+        registerTask(data.task_id, "reasoning");
       } else {
         throw new Error(data.detail || "Chat failed");
       }
@@ -83,21 +117,29 @@ export default function ReasoningAgentPage() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: `Error: ${err.message}`,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC'
       }]);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const q = searchParams.get("q");
-    if (q && !initialized.current) {
+    if (!initialized.current) {
       initialized.current = true;
-      handleSend(q, []); // Auto-send the query from Home page
-      router.replace("/agents/reasoning"); // Clear URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const sid = searchParams.get("session_id");
+      const q = searchParams.get("q");
+      if (sid) {
+        loadSession(sid);
+      } else if (q) {
+        // Small timeout to let component mount fully
+        setTimeout(() => {
+          handleSend(q, []);
+          // Remove q from URL to avoid re-triggering
+          router.replace("/agents/reasoning", { scroll: false });
+        }, 100);
+      }
     }
-  }, [searchParams, router]);
+  }, [router]);
 
   return (
     <AppShell>
@@ -156,10 +198,8 @@ export default function ReasoningAgentPage() {
                     <span className="text-label-sm text-secondary mt-1">{msg.timestamp}</span>
                   </div>
                 ))}
-                {loading && (
-                   <div className="self-start px-4 py-3 bg-surface-container-lowest text-on-surface rounded-2xl rounded-tl-sm shadow-sm border border-surface-container-low animate-pulse">
-                     <p className="text-body-md">Thinking...</p>
-                   </div>
+                {loading && activeTask?.id && (
+                   <AgentThinkingTrace taskId={activeTask.id} />
                 )}
               </Card>
             )}
@@ -181,16 +221,25 @@ export default function ReasoningAgentPage() {
             {chatHistory.length === 0 ? (
               <EmptyState icon="history" title="No chat history" description="Your past reasoning sessions will appear here." />
             ) : (
-              <div className="flex flex-col gap-space-2xs flex-1 overflow-y-auto">
-                {chatHistory.map((item) => (
-                  <div key={item.id} className="p-space-sm bg-surface-container-lowest rounded-xl flex flex-col gap-1 cursor-pointer hover:bg-surface-container-low transition-colors">
+              <div className="flex flex-col gap-space-2xs flex-1 overflow-y-auto max-h-[calc(100vh-14rem)]">
+                {chatHistory.slice(0, visibleHistoryCount).map((item) => (
+                  <div key={item.id} onClick={() => loadSession(item.id)} className="p-space-sm bg-surface-container-lowest rounded-xl flex flex-col gap-1 cursor-pointer hover:bg-surface-container-low transition-colors">
                     <h3 className="text-label-md font-semibold text-on-surface line-clamp-1">{item.title}</h3>
                     <div className="flex justify-between items-center text-label-sm text-secondary">
                       <span>{item.subtitle}</span>
-                      <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                      <span>{item.timestamp ? new Date(item.timestamp).toISOString().replace('T', ' ').substring(0, 19) + ' UTC' : ''}</span>
                     </div>
                   </div>
                 ))}
+                {chatHistory.length > visibleHistoryCount && (
+                  <button
+                    onClick={() => setVisibleHistoryCount(prev => prev + 5)}
+                    className="mt-space-2xs py-2 px-3 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low text-label-sm font-semibold text-primary transition-colors flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">expand_more</span>
+                    View more ({chatHistory.length - visibleHistoryCount} remaining)
+                  </button>
+                )}
               </div>
             )}
           </aside>

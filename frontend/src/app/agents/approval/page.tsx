@@ -56,13 +56,6 @@ export default function ApprovalAgentPage() {
   const [auditTrail, setAuditTrail] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Hardcode a default workflow for visuals
-  const workflowSteps: WorkflowStep[] = [
-    { id: "1", label: "Drafting", status: "completed" },
-    { id: "2", label: "Review", status: "active" },
-    { id: "3", label: "HOD Approval", status: "pending" },
-  ];
-
   const fetchTasks = async () => {
     try {
       const res = await fetch("http://localhost:8000/api/agents/approval/tasks");
@@ -126,28 +119,7 @@ export default function ApprovalAgentPage() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
           {/* Main */}
           <div className="xl:col-span-8 flex flex-col gap-space-lg">
-            {/* Pipeline Tracker */}
-            <Card className="flex flex-col gap-space-md">
-              <h2 className="text-headline-sm font-semibold text-on-surface">Active Pipeline</h2>
-              <div className="flex items-center gap-space-xs overflow-x-auto py-space-xs">
-                {workflowSteps.map((step, i) => (
-                  <div key={step.id} className="flex items-center gap-space-xs shrink-0">
-                    <div className={`px-3 py-2 rounded-xl text-label-sm font-semibold flex items-center gap-1 ${
-                      step.status === "completed" ? "bg-secondary-container/70 text-on-secondary-fixed" :
-                      step.status === "active" ? "bg-primary text-on-primary" :
-                      "bg-surface-container text-secondary"
-                    }`}>
-                      {step.status === "completed" && <span className="material-symbols-outlined text-[14px]">check</span>}
-                      {step.status === "active" && <span className="material-symbols-outlined text-[14px]">settings</span>}
-                      {step.label}
-                    </div>
-                    {i < workflowSteps.length - 1 && (
-                      <span className="material-symbols-outlined text-[16px] text-secondary">arrow_forward</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
+            {/* Removed hardcoded pipeline UI */}
 
             {/* Task List */}
             <Card className="flex flex-col gap-space-md">
@@ -172,7 +144,9 @@ export default function ApprovalAgentPage() {
                         <span className="text-body-sm text-secondary truncate">{task.description}</span>
                       </div>
                       <div className="flex items-center gap-space-sm shrink-0">
-                        <span className="text-label-sm font-semibold text-secondary">{task.due_date || task.created_at}</span>
+                        <span className="text-label-sm font-semibold text-secondary">
+                          {(task.due_date || task.created_at) ? new Date(task.due_date || task.created_at).toISOString().replace('T', ' ').substring(0, 19) + ' UTC' : 'No Date'}
+                        </span>
                         {task.status !== "approved" && (
                           <PillButton variant="primary" icon="check" onClick={() => handleApprove(task.id)}>Approve</PillButton>
                         )}
@@ -197,7 +171,7 @@ export default function ApprovalAgentPage() {
                     <div className="flex flex-col">
                       <span className="text-label-md font-semibold text-on-surface">{log.actor}</span>
                       <span className="text-body-sm text-secondary">{log.action}</span>
-                      <span className="text-label-sm text-secondary mt-1">{new Date(log.timestamp).toLocaleString()}</span>
+                      <span className="text-label-sm text-secondary mt-1">{log.timestamp ? new Date(log.timestamp).toISOString().replace('T', ' ').substring(0, 19) + ' UTC' : new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC'}</span>
                     </div>
                   </div>
                 ))}

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import AgentCard from "@/components/ui/AgentCard";
 import InputBar from "@/components/ui/InputBar";
 import EmptyState from "@/components/ui/EmptyState";
+import WorkflowBuilderModal from "@/components/ui/WorkflowBuilderModal";
 
 interface RecentSession {
   id: string;
@@ -25,11 +26,64 @@ const AGENTS = [
 ];
 
 export default function HomePage() {
-  const [recentSessions] = useState<RecentSession[]>([]);
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
+  const [isRouting, setIsRouting] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [visibleSessionCount, setVisibleSessionCount] = useState(5);
   const router = useRouter();
 
-  const handleSearch = (query: string) => {
-    router.push(`/agents/reasoning?q=${encodeURIComponent(query)}`);
+  useEffect(() => {
+    fetch("http://localhost:8000/api/agents/reasoning/history")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.history) {
+          // Map HistoryEntry to RecentSession
+          const mapped = data.history.map((h: any) => {
+            let icon = "forum";
+            if (h.subtitle === "Multi-Agent Workflow") icon = "account_tree";
+            else if (h.subtitle.includes("Code")) icon = "terminal";
+            else if (h.subtitle.includes("Document")) icon = "article";
+            else if (h.subtitle.includes("Scan")) icon = "document_scanner";
+            
+            return {
+              id: h.id,
+              title: h.title,
+              subtitle: h.subtitle,
+              icon: icon,
+              timestamp: h.timestamp ? new Date(h.timestamp).toISOString().replace('T', ' ').substring(0, 19) + ' UTC' : new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC'
+            };
+          });
+          setRecentSessions(mapped);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setIsRouting(true);
+    try {
+      const res = await fetch("http://localhost:8000/api/orchestrator/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      const agent = data.agent || "reasoning";
+      router.push(`/agents/${agent.replace("_", "-")}?q=${encodeURIComponent(query)}`);
+    } catch (err) {
+      console.error(err);
+      router.push(`/agents/reasoning?q=${encodeURIComponent(query)}`);
+    } finally {
+      setIsRouting(false);
+    }
+  };
+
+  const handleSessionClick = (session: RecentSession) => {
+    if (session.subtitle === "Multi-Agent Workflow") {
+      router.push(`/agents/workflow?session_id=${session.id}`);
+    } else {
+      router.push(`/agents/reasoning?session_id=${session.id}`);
+    }
   };
 
   return (
@@ -58,8 +112,14 @@ export default function HomePage() {
           </div>
 
           {/* Input Bar */}
-          <div className="pt-space-md pb-space-xs mt-auto">
+          <div className="pt-space-md pb-space-xs mt-auto relative">
             <InputBar placeholder="Initiate a query or ask an agent to start a workflow..." onSubmit={handleSearch} />
+            {isRouting && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 bg-surface-container-highest px-4 py-2 rounded-full shadow-lg mt-[-10px]">
+                <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                <span className="text-label-sm font-semibold text-on-surface">Routing task to correct agent...</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -88,19 +148,46 @@ export default function HomePage() {
               <EmptyState icon="history" title="No recent sessions yet" description="Your conversations with agents will appear here." />
             ) : (
               <div className="flex flex-col gap-space-xs mt-space-2xs overflow-y-auto max-h-[calc(100vh-21rem)]">
-                {/* Sessions would render here from recentSessions state */}
+                {recentSessions.slice(0, visibleSessionCount).map((session) => (
+                  <div key={session.id} onClick={() => handleSessionClick(session)} className="p-3 bg-surface-container-lowest rounded-xl flex items-center gap-3 cursor-pointer hover:bg-surface-container-low transition-colors shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{session.icon}</span>
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-label-md font-semibold text-on-surface line-clamp-1">{session.title}</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-label-sm text-secondary">{session.subtitle}</span>
+                        <span className="text-label-sm text-secondary">{session.timestamp}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {recentSessions.length > visibleSessionCount && (
+                  <button
+                    onClick={() => setVisibleSessionCount(prev => prev + 5)}
+                    className="mt-space-2xs py-2 px-3 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low text-label-sm font-semibold text-primary transition-colors flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">expand_more</span>
+                    View more ({recentSessions.length - visibleSessionCount} remaining)
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           <div className="pt-space-md mt-space-sm">
-            <button className="w-full flex items-center justify-center gap-space-xs py-2.5 rounded-full bg-primary text-on-primary text-label-md font-medium hover:bg-inverse-surface shadow-sm transition-all">
+            <button 
+              onClick={() => setShowBuilder(true)}
+              className="w-full flex items-center justify-center gap-space-xs py-2.5 rounded-full bg-primary text-on-primary text-label-md font-medium hover:bg-inverse-surface shadow-sm transition-all"
+            >
               <span className="material-symbols-outlined text-[18px]">add</span>
               <span>New Task</span>
             </button>
           </div>
         </div>
       </div>
+      
+      {showBuilder && <WorkflowBuilderModal onClose={() => setShowBuilder(false)} />}
     </AppShell>
   );
 }

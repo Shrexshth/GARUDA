@@ -10,4 +10,6 @@ class GraphState(TypedDict):
     generated_file_path: Optional[str]
     error_count: int
     task_type: str
+    model_metadata: Dict[str, Any]
     tool_results: List[Dict[str, Any]]
+    retrieved_context: Optional[List[Any]]

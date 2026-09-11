@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useTasks } from "@/context/TaskContext";
+import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import Card from "@/components/ui/Card";
 import PillButton from "@/components/ui/PillButton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -20,37 +23,66 @@ interface DocumentDraft {
 
 export default function DocumentAgentPage() {
   const [activeDraft, setActiveDraft] = useState<DocumentDraft | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [promptText, setPromptText] = useState("");
+  
+  const { tasks, registerTask, clearTask } = useTasks();
+  
+  const activeTask = Object.values(tasks).find(t => t.agent === "document");
+  const loading = activeTask?.status === "running" || activeTask?.status === "pending";
+  const router = useRouter();
 
-  const handleGenerate = async (summary: string) => {
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:8000/api/agents/document/draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary }),
-      });
-      const data = await res.json();
-      
-      if (res.ok && data.success) {
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const q = searchParams.get("q");
+    if (q) {
+      setTimeout(() => {
+        setPromptText(q);
+        handleSubmit(q);
+        router.replace("/agents/document", { scroll: false });
+      }, 100);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (activeTask && (activeTask.status === "completed" || activeTask.status === "failed")) {
+      if (activeTask.status === "completed" && activeTask.result) {
+        const data = activeTask.result;
         setActiveDraft({
           id: Date.now().toString(),
           title: "Note for Approval (NFA)",
           version: "v1.0.0",
           status: "Draft",
-          lastSync: new Date().toLocaleTimeString(),
-          content: data.content || "Draft generated successfully.",
-          filePath: data.file_path || ""
+          lastSync: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+          content: data.messages && data.messages.length > 0 ? data.messages[data.messages.length - 1].content : "Draft generated successfully.",
+          filePath: data.generated_file_path || ""
         });
-        toast.success("Draft generated successfully!");
       } else {
-        throw new Error(data.detail || "Draft generation failed.");
+        toast.error(activeTask.result?.error || "Failed to generate document.");
+      }
+      clearTask(activeTask.id);
+    }
+  }, [activeTask, clearTask]);
+
+  const handleSubmit = async (textToSubmit?: string) => {
+    const text = typeof textToSubmit === 'string' ? textToSubmit : promptText;
+    if (!text.trim()) return;
+
+    try {
+      const res = await fetch("http://localhost:8000/api/agents/document/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summary: text }),
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success && data.task_id) {
+        registerTask(data.task_id, "document");
+      } else {
+        throw new Error(data.detail || "Draft generation failed to start.");
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Failed to generate document.");
-    } finally {
-      setLoading(false);
+      toast.error(err.message || "Failed to start document generation.");
     }
   };
 
@@ -105,7 +137,7 @@ export default function DocumentAgentPage() {
                 description="Start a new NFA or compliance note to begin drafting. The Document Agent will synthesize equipment data and generate formal documentation."
               />
               <div className="mt-space-md w-full max-w-2xl mx-auto">
-                <InputBar placeholder="Describe the NFA (e.g. Upgrade pump P-102)..." onSubmit={handleGenerate} />
+                <InputBar placeholder="Describe the NFA (e.g. Upgrade pump P-102)..." onSubmit={handleSubmit} />
               </div>
               {loading && <div className="text-center mt-4 text-secondary animate-pulse">Drafting document via docxtpl...</div>}
             </Card>
@@ -121,7 +153,7 @@ export default function DocumentAgentPage() {
                  </div>
               </div>
               <div className="prose prose-sm max-w-none text-on-surface whitespace-pre-wrap font-serif">
-                {activeDraft.content}
+                <ReactMarkdown>{activeDraft.content}</ReactMarkdown>
               </div>
               <div className="mt-8 text-secondary text-label-sm">
                 File generated at: {activeDraft.filePath}

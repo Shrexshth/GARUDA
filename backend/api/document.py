@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
-from backend.core.graph import app as workflow_app
 from backend.core.state import GraphState
+from backend.api.tasks import run_agent_task
 
 router = APIRouter()
 
@@ -11,10 +11,10 @@ class DraftRequest(BaseModel):
     summary: str
 
 @router.post("/draft")
-async def create_draft(request: DraftRequest):
+async def create_draft(request: DraftRequest, background_tasks: BackgroundTasks):
     """
     Triggers the Reasoning agent to prepare content for the document,
-    then executes the Document Tool to generate the actual docx file.
+    then executes the Document Tool to generate the actual docx file in the background.
     """
     try:
         prompt = f"""
@@ -39,12 +39,12 @@ async def create_draft(request: DraftRequest):
             "tool_results": []
         }
         
-        result_state = workflow_app.invoke(initial_state)
+        task_id = run_agent_task(background_tasks, "document", initial_state)
         
         return {
             "success": True,
-            "file_path": result_state.get("generated_file_path"),
-            "content": result_state["messages"][-2]["content"] if len(result_state["messages"]) > 1 else "",
+            "task_id": task_id,
+            "status": "running"
         }
         
     except HTTPException:

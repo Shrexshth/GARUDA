@@ -2,11 +2,12 @@ import os
 import sqlite3
 import datetime
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from backend.core.graph import app as workflow_app
 from backend.core.state import GraphState
+from backend.api.tasks import register_task, finish_task
 
 router = APIRouter()
 
@@ -50,8 +51,50 @@ class ChatRequest(BaseModel):
     session_id: str
     messages: List[ChatMessage]
     
+def chat_background_task(task_id: str, session_id: str, request_messages: List[ChatMessage], initial_state: GraphState):
+    try:
+        # Execute workflow
+        result_state = workflow_app.invoke(initial_state)
+        response_msg = result_state["messages"][-1]
+        
+        # Save to SQLite
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        now = datetime.datetime.utcnow().isoformat()
+        
+        # Check if session exists, if not create it
+        cursor.execute("SELECT id FROM chat_sessions WHERE id = ?", (session_id,))
+        if not cursor.fetchone():
+            # Use the first user message as the title
+            title = request_messages[0].content[:50] + "..." if request_messages else "New Chat"
+            cursor.execute(
+                "INSERT INTO chat_sessions (id, title, subtitle, timestamp, tags) VALUES (?, ?, ?, ?, ?)",
+                (session_id, title, "Reasoning Agent", now, '["Technical"]')
+            )
+            
+        # Insert user messages
+        for msg in request_messages:
+            cursor.execute(
+                "INSERT INTO chat_messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+                (session_id, msg.role, msg.content, now)
+            )
+        
+        # Insert assistant response
+        cursor.execute(
+            "INSERT INTO chat_messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+            (session_id, response_msg["role"], response_msg["content"], now)
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        # Finish the global task
+        finish_task(task_id, "completed", {"message": response_msg})
+    except Exception as e:
+        finish_task(task_id, "failed", {"error": str(e)})
+
 @router.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, background_tasks: BackgroundTasks):
     """
     General chat endpoint utilizing the Reasoning Agent.
     """
@@ -69,44 +112,13 @@ async def chat(request: ChatRequest):
             "tool_results": []
         }
         
-        # Execute workflow
-        result_state = workflow_app.invoke(initial_state)
-        
-        response_msg = result_state["messages"][-1]
-        
-        # Save to SQLite
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        now = datetime.datetime.utcnow().isoformat()
-        
-        # Check if session exists, if not create it
-        cursor.execute("SELECT id FROM chat_sessions WHERE id = ?", (request.session_id,))
-        if not cursor.fetchone():
-            # Use the first user message as the title
-            title = request.messages[0].content[:50] + "..." if request.messages else "New Chat"
-            cursor.execute(
-                "INSERT INTO chat_sessions (id, title, subtitle, timestamp, tags) VALUES (?, ?, ?, ?, ?)",
-                (request.session_id, title, "Reasoning Agent", now, '["Technical"]')
-            )
-            
-        # Insert user messages and assistant response
-        for msg in request.messages:
-            cursor.execute(
-                "INSERT INTO chat_messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
-                (request.session_id, msg.role, msg.content, now)
-            )
-        
-        cursor.execute(
-            "INSERT INTO chat_messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
-            (request.session_id, response_msg["role"], response_msg["content"], now)
-        )
-        
-        conn.commit()
-        conn.close()
+        task_id = register_task("reasoning")
+        background_tasks.add_task(chat_background_task, task_id, request.session_id, request.messages, initial_state)
         
         return {
             "success": True,
-            "message": response_msg
+            "task_id": task_id,
+            "status": "running"
         }
         
     except HTTPException:
@@ -135,5 +147,28 @@ async def get_history():
             })
             
         return {"success": True, "history": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/history/{session_id}")
+async def get_session_history(session_id: str):
+    """Returns messages for a specific session."""
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT role, content, timestamp FROM chat_messages WHERE session_id = ? ORDER BY id ASC", (session_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        messages = []
+        for i, row in enumerate(rows):
+            messages.append({
+                "id": f"{session_id}-{i}",
+                "role": row[0],
+                "content": row[1],
+                "timestamp": row[2]
+            })
+            
+        return {"success": True, "messages": messages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useTasks } from "@/context/TaskContext";
 import Card from "@/components/ui/Card";
 import InputBar from "@/components/ui/InputBar";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusBadge from "@/components/ui/StatusBadge";
+import ReactMarkdown from "react-markdown";
 
 interface SearchResult {
   id: string;
@@ -26,7 +28,60 @@ export default function KnowledgeBasePage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [citedSources, setCitedSources] = useState<SearchResult[]>([]);
   const [indexedCorpora, setIndexedCorpora] = useState<IndexedCorpus[]>([]);
-  const [loading, setLoading] = useState(false);
+  
+  const { tasks, registerTask, clearTask } = useTasks();
+  
+  const activeTask = Object.values(tasks).find(t => t.agent === "knowledge-base");
+  const loading = activeTask?.status === "running" || activeTask?.status === "pending";
+
+  useEffect(() => {
+    if (activeTask && (activeTask.status === "completed" || activeTask.status === "failed")) {
+      if (activeTask.status === "completed" && activeTask.result) {
+        const state = activeTask.result;
+        // LLM Synthesis is the last message
+        if (state.messages && state.messages.length > 0) {
+          const synthesis = state.messages[state.messages.length - 1].content;
+          const contexts = state.retrieved_context || [];
+          const formattedContexts = contexts.map((ctx: any, i: number) => {
+             // Handle both object and string formats for safety
+             if (typeof ctx === 'string') {
+               return {
+                 id: i.toString(),
+                 title: `Document Snippet ${i+1}`,
+                 source: "Knowledge Base",
+                 snippet: ctx,
+                 relevance: 0.95,
+                 tags: ["Retrieved"]
+               };
+             }
+             return {
+                 id: i.toString(),
+                 title: ctx.title || `Snippet ${i+1}`,
+                 source: ctx.source || "Knowledge Base",
+                 snippet: ctx.snippet || "",
+                 relevance: ctx.score || 0.95,
+                 tags: ["Retrieved"]
+             };
+          });
+          
+          setSearchResults([{
+            id: "synthesis",
+            title: "AI Synthesis",
+            source: "GAURDA Reasoning Engine",
+            snippet: synthesis,
+            relevance: 1.0,
+            tags: ["Synthesized"]
+          }, ...formattedContexts]);
+          
+          setCitedSources(formattedContexts);
+        }
+      } else {
+        setSearchResults([]);
+        setCitedSources([]);
+      }
+      clearTask(activeTask.id);
+    }
+  }, [activeTask, clearTask]);
 
   useEffect(() => {
     fetch("http://localhost:8000/api/agents/kb/corpora")
@@ -40,7 +95,6 @@ export default function KnowledgeBasePage() {
   }, []);
 
   const handleSearch = async (query: string) => {
-    setLoading(true);
     try {
       const res = await fetch("http://localhost:8000/api/agents/kb/search", {
         method: "POST",
@@ -48,18 +102,14 @@ export default function KnowledgeBasePage() {
         body: JSON.stringify({ query }),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        setSearchResults(data.results || []);
-        // Also mock cite them for the UI
-        setCitedSources(data.results ? [data.results[0]].filter(Boolean) : []);
+      if (res.ok && data.success && data.task_id) {
+        registerTask(data.task_id, "knowledge-base");
       } else {
-        throw new Error(data.detail || "Search failed");
+        throw new Error(data.detail || "Search failed to start");
       }
     } catch (err) {
       console.error(err);
       // In a real app we'd show a toast error
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -106,9 +156,15 @@ export default function KnowledgeBasePage() {
                   <Card key={result.id} className="flex flex-col gap-space-sm hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start justify-between">
                       <h3 className="text-headline-sm font-semibold text-on-surface">{result.title}</h3>
-                      <StatusBadge label={`${Math.round(result.relevance * 100)}% match`} variant="success" />
+                      {result.id !== "synthesis" && <StatusBadge label={`${Math.round(result.relevance * 100)}% match`} variant="success" />}
                     </div>
-                    <p className="text-body-md text-secondary">{result.snippet}</p>
+                    {result.id === "synthesis" ? (
+                      <div className="prose prose-sm max-w-none text-on-surface whitespace-pre-wrap font-serif">
+                        <ReactMarkdown>{result.snippet}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-body-md text-secondary">{result.snippet}</p>
+                    )}
                     <div className="flex items-center gap-space-xs">
                       <span className="text-label-sm font-semibold text-secondary">{result.source}</span>
                       {result.tags.map((tag, i) => (

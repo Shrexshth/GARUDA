@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { TaskProvider } from "@/context/TaskContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-full flex flex-col font-sans">
-        {children}
+        <TaskProvider>
+          {children}
+        </TaskProvider>
         <Toaster position="bottom-right" toastOptions={{
           style: {
             background: '#333',

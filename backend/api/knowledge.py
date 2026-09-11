@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from backend.tools.rag_engine import rag_engine
+from backend.api.tasks import register_task, finish_task
 import os
 import glob
 
@@ -10,19 +11,33 @@ router = APIRouter()
 class SearchRequest(BaseModel):
     query: str
 
+# Replaced background task with real graph execution
+
 @router.post("/search")
-async def search_knowledge_base(request: SearchRequest):
+async def search_knowledge_base(request: SearchRequest, background_tasks: BackgroundTasks):
     """
-    Queries the local ChromaDB for relevant semantic chunks.
+    Queries the local ChromaDB for relevant semantic chunks in the background.
     """
     try:
-        result = rag_engine.search_manuals(request.query)
-        if not result["success"]:
-            raise HTTPException(status_code=500, detail=result["error"])
-            
+        from backend.core.state import GraphState
+        from backend.api.tasks import run_agent_task
+        
+        initial_state: GraphState = {
+            "messages": [{"role": "user", "content": request.query}],
+            "active_agent": "knowledge-base",
+            "extracted_data": None,
+            "generated_file_path": None,
+            "error_count": 0,
+            "task_type": "",
+            "tool_results": []
+        }
+        
+        task_id = run_agent_task(background_tasks, "knowledge-base", initial_state)
+        
         return {
             "success": True,
-            "results": result["results"]
+            "task_id": task_id,
+            "status": "running"
         }
         
     except HTTPException:
